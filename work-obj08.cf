@@ -1,0 +1,7 @@
+v 4
+file . "tb/tb_pc_reg.vhd" "e57ac488f8283ab0a7c981ac81caf8900c0b7a95" "20261114145242.278":
+  entity tb_pc_reg at 1( 0) + 0 on 13;
+  architecture sim of tb_pc_reg at 7( 87) + 0 on 14;
+file . "rtl/pc_reg.vhd" "da55b67bd2bf529d8f35e63b0c766ad0b1ebeb37" "20261114145242.277":
+  entity pc_reg at 1( 0) + 0 on 11;
+  architecture synth of pc_reg at 18( 346) + 0 on 12;

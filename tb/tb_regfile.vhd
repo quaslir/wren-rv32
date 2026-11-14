@@ -15,7 +15,7 @@ architecture sim of tb_regfile is
     signal rd1: std_logic_vector(31 downto 0):= (others => '0');
     signal rd2: std_logic_vector(31 downto 0):= (others => '0');
 begin
-riscv_ram_inst : entity work.riscv_ram
+riscv_ram_inst : entity work.regfile
     port map(
         clk => clk,
         we  => we,
