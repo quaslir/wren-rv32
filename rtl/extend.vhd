@@ -5,14 +5,19 @@ use ieee.numeric_std.all;
 entity extend is
     port(
         instr: in std_logic_vector(31 downto 0);
+        imm_src: in std_logic_vector(1 downto 0);
         imm_ext: out std_logic_vector(31 downto 0)
     );
 end entity extend;
 
 
 architecture synth of extend is
-    signal imm : std_logic_vector(11 downto 0);
 begin
-    imm <= instr(31 downto 20);
-    imm_ext <= (31 downto 12 => imm(11)) & imm;
+
+      with imm_src select
+        imm_ext <=
+            (31 downto 12  => instr(31)) & instr(31 downto 20) when "00",
+            (31 downto 12 => instr(31)) & instr(7) & instr(30 downto 25) & instr(11 downto 8) & '0' when "10",
+            (others => '0') when others;
+    
 end architecture synth;

@@ -1,84 +1,167 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity tb_control_unit is
 end entity tb_control_unit;
 
 architecture sim of tb_control_unit is
-    signal instr     : std_logic_vector(31 downto 0);
+    signal instr     : std_logic_vector(31 downto 0) := (others => '0');
     signal reg_write : std_logic;
-    signal alu_src   : std_logic;
     signal alu_op    : std_logic_vector(3 downto 0);
+    signal alu_src   : std_logic;
     signal illegal   : std_logic;
-begin
+    signal imm_src   : std_logic_vector(1 downto 0);
+    signal branch    : std_logic;
 
+    type vec_t is record
+        name      : string(1 to 20);
+        instr     : std_logic_vector(31 downto 0);
+        reg_write : std_logic;
+        alu_src   : std_logic;
+        alu_op    : std_logic_vector(3 downto 0);
+        imm_src   : std_logic_vector(1 downto 0);
+        branch    : std_logic;
+        illegal   : std_logic;
+    end record;
+
+    type vec_array_t is array (natural range <>) of vec_t;
+
+    constant VECTORS : vec_array_t := (
+        ("add                 ", x"002081B3", '1', '0', "0000", "--", '0', '0'),
+        ("sub                 ", x"402081B3", '1', '0', "1000", "--", '0', '0'),
+        ("sll                 ", x"002091B3", '1', '0', "0001", "--", '0', '0'),
+        ("slt                 ", x"0020A1B3", '1', '0', "0010", "--", '0', '0'),
+        ("sltu                ", x"0020B1B3", '1', '0', "0011", "--", '0', '0'),
+        ("xor                 ", x"0020C1B3", '1', '0', "0100", "--", '0', '0'),
+        ("srl                 ", x"0020D1B3", '1', '0', "0101", "--", '0', '0'),
+        ("sra                 ", x"4020D1B3", '1', '0', "1101", "--", '0', '0'),
+        ("or                  ", x"0020E1B3", '1', '0', "0110", "--", '0', '0'),
+        ("and                 ", x"0020F1B3", '1', '0', "0111", "--", '0', '0'),
+        ("mul_div_f3_0        ", x"022081B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_1        ", x"022091B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_2        ", x"0220A1B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_3        ", x"0220B1B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_4        ", x"0220C1B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_5        ", x"0220D1B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_6        ", x"0220E1B3", '0', '-', "----", "--", '0', '1'),
+        ("mul_div_f3_7        ", x"0220F1B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0100000_f3_1   ", x"402091B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0100000_f3_2   ", x"4020A1B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0100000_f3_3   ", x"4020B1B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0100000_f3_4   ", x"4020C1B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0100000_f3_6   ", x"4020E1B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0100000_f3_7   ", x"4020F1B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_1111111        ", x"FE2081B3", '0', '-', "----", "--", '0', '1'),
+        ("r_f7_0000010        ", x"0420D1B3", '0', '-', "----", "--", '0', '1'),
+        ("addi_5              ", x"00510093", '1', '1', "0000", "00", '0', '0'),
+        ("addi_-1             ", x"FFF10093", '1', '1', "0000", "00", '0', '0'),
+        ("addi_1024           ", x"40010093", '1', '1', "0000", "00", '0', '0'),
+        ("addi_-2048          ", x"80010093", '1', '1', "0000", "00", '0', '0'),
+        ("addi_2047           ", x"7FF10093", '1', '1', "0000", "00", '0', '0'),
+        ("slti_5              ", x"00512093", '1', '1', "0010", "00", '0', '0'),
+        ("slti_-1             ", x"FFF12093", '1', '1', "0010", "00", '0', '0'),
+        ("slti_1024           ", x"40012093", '1', '1', "0010", "00", '0', '0'),
+        ("slti_-2048          ", x"80012093", '1', '1', "0010", "00", '0', '0'),
+        ("slti_2047           ", x"7FF12093", '1', '1', "0010", "00", '0', '0'),
+        ("sltiu_5             ", x"00513093", '1', '1', "0011", "00", '0', '0'),
+        ("sltiu_-1            ", x"FFF13093", '1', '1', "0011", "00", '0', '0'),
+        ("sltiu_1024          ", x"40013093", '1', '1', "0011", "00", '0', '0'),
+        ("sltiu_-2048         ", x"80013093", '1', '1', "0011", "00", '0', '0'),
+        ("sltiu_2047          ", x"7FF13093", '1', '1', "0011", "00", '0', '0'),
+        ("xori_5              ", x"00514093", '1', '1', "0100", "00", '0', '0'),
+        ("xori_-1             ", x"FFF14093", '1', '1', "0100", "00", '0', '0'),
+        ("xori_1024           ", x"40014093", '1', '1', "0100", "00", '0', '0'),
+        ("xori_-2048          ", x"80014093", '1', '1', "0100", "00", '0', '0'),
+        ("xori_2047           ", x"7FF14093", '1', '1', "0100", "00", '0', '0'),
+        ("ori_5               ", x"00516093", '1', '1', "0110", "00", '0', '0'),
+        ("ori_-1              ", x"FFF16093", '1', '1', "0110", "00", '0', '0'),
+        ("ori_1024            ", x"40016093", '1', '1', "0110", "00", '0', '0'),
+        ("ori_-2048           ", x"80016093", '1', '1', "0110", "00", '0', '0'),
+        ("ori_2047            ", x"7FF16093", '1', '1', "0110", "00", '0', '0'),
+        ("andi_5              ", x"00517093", '1', '1', "0111", "00", '0', '0'),
+        ("andi_-1             ", x"FFF17093", '1', '1', "0111", "00", '0', '0'),
+        ("andi_1024           ", x"40017093", '1', '1', "0111", "00", '0', '0'),
+        ("andi_-2048          ", x"80017093", '1', '1', "0111", "00", '0', '0'),
+        ("andi_2047           ", x"7FF17093", '1', '1', "0111", "00", '0', '0'),
+        ("slli_0              ", x"00011093", '1', '1', "0001", "00", '0', '0'),
+        ("srli_0              ", x"00015093", '1', '1', "0101", "00", '0', '0'),
+        ("srai_0              ", x"40015093", '1', '1', "1101", "00", '0', '0'),
+        ("slli_3              ", x"00311093", '1', '1', "0001", "00", '0', '0'),
+        ("srli_3              ", x"00315093", '1', '1', "0101", "00", '0', '0'),
+        ("srai_3              ", x"40315093", '1', '1', "1101", "00", '0', '0'),
+        ("slli_31             ", x"01F11093", '1', '1', "0001", "00", '0', '0'),
+        ("srli_31             ", x"01F15093", '1', '1', "0101", "00", '0', '0'),
+        ("srai_31             ", x"41F15093", '1', '1', "1101", "00", '0', '0'),
+        ("slli_bad_f7_20      ", x"40311093", '0', '-', "----", "--", '0', '1'),
+        ("slli_bad_f7_01      ", x"02311093", '0', '-', "----", "--", '0', '1'),
+        ("slli_bad_f7_7f      ", x"FE311093", '0', '-', "----", "--", '0', '1'),
+        ("srx_bad_f7_01       ", x"02315093", '0', '-', "----", "--", '0', '1'),
+        ("srx_bad_f7_60       ", x"C0315093", '0', '-', "----", "--", '0', '1'),
+        ("srx_bad_f7_7f       ", x"FE315093", '0', '-', "----", "--", '0', '1'),
+        ("beq_8               ", x"00208463", '0', '0', "1000", "10", '1', '0'),
+        ("beq_-8              ", x"FE208CE3", '0', '0', "1000", "10", '1', '0'),
+        ("beq_4094            ", x"7E208FE3", '0', '0', "1000", "10", '1', '0'),
+        ("beq_-4096           ", x"80208063", '0', '0', "1000", "10", '1', '0'),
+        ("beq_0               ", x"00208063", '0', '0', "1000", "10", '1', '0'),
+        ("bne                 ", x"00209463", '0', '-', "----", "--", '0', '1'),
+        ("blt                 ", x"0020C463", '0', '-', "----", "--", '0', '1'),
+        ("bge                 ", x"0020D463", '0', '-', "----", "--", '0', '1'),
+        ("bltu                ", x"0020E463", '0', '-', "----", "--", '0', '1'),
+        ("bgeu                ", x"0020F463", '0', '-', "----", "--", '0', '1'),
+        ("b_f3_2              ", x"0020A463", '0', '-', "----", "--", '0', '1'),
+        ("b_f3_3              ", x"0020B463", '0', '-', "----", "--", '0', '1'),
+        ("lw                  ", x"00002083", '0', '-', "----", "--", '0', '1'),
+        ("sw                  ", x"00112023", '0', '-', "----", "--", '0', '1'),
+        ("lui                 ", x"000010B7", '0', '-', "----", "--", '0', '1'),
+        ("auipc               ", x"00001097", '0', '-', "----", "--", '0', '1'),
+        ("jal                 ", x"008000EF", '0', '-', "----", "--", '0', '1'),
+        ("jalr                ", x"000080E7", '0', '-', "----", "--", '0', '1'),
+        ("ecall               ", x"00000073", '0', '-', "----", "--", '0', '1'),
+        ("fence               ", x"0000000F", '0', '-', "----", "--", '0', '1'),
+        ("zero                ", x"00000000", '0', '-', "----", "--", '0', '1'),
+        ("ones                ", x"FFFFFFFF", '0', '-', "----", "--", '0', '1')
+    );
+begin
     dut : entity work.control_unit
-        port map (
+        port map(
             instr     => instr,
             reg_write => reg_write,
             alu_op    => alu_op,
             alu_src   => alu_src,
-            illegal   => illegal
+            illegal   => illegal,
+            imm_src   => imm_src,
+            branch    => branch
         );
 
     stim : process
-        variable errors : natural := 0;
-
-        procedure check (ins     : std_logic_vector(31 downto 0);
-                         exp_rw  : std_logic;
-                         exp_src : std_logic;
-                         exp_alu : std_logic_vector(3 downto 0);
-                         exp_ill : std_logic;
-                         msg     : string) is
-        begin
-            instr <= ins;
-            wait for 10 ns;
-            if reg_write /= exp_rw or alu_src /= exp_src or
-               alu_op /= exp_alu or illegal /= exp_ill then
-                errors := errors + 1;
-                report msg & " (" & to_hstring(ins) & "): expected" &
-                       " reg_write=" & std_logic'image(exp_rw) &
-                       " alu_src=" & std_logic'image(exp_src) &
-                       " alu_op=" & to_string(exp_alu) &
-                       " illegal=" & std_logic'image(exp_ill) &
-                       ", got" &
-                       " reg_write=" & std_logic'image(reg_write) &
-                       " alu_src=" & std_logic'image(alu_src) &
-                       " alu_op=" & to_string(alu_op) &
-                       " illegal=" & std_logic'image(illegal) severity error;
-            end if;
-        end procedure;
-
+        variable err : natural := 0;
+        variable v   : vec_t;
     begin
-        check(x"002081B3", '1', '0', "0000", '0', "add x3, x1, x2");
-        check(x"40208233", '1', '0', "1000", '0', "sub x4, x1, x2");
-        check(x"0020F2B3", '1', '0', "0111", '0', "and x5, x1, x2");
-        check(x"0020E333", '1', '0', "0110", '0', "or x6, x1, x2");
-        check(x"0020C533", '1', '0', "0100", '0', "xor x10, x1, x2");
-        check(x"002095B3", '1', '0', "0001", '0', "sll x11, x1, x2");
-        check(x"0020D633", '1', '0', "0101", '0', "srl x12, x1, x2");
-        check(x"4020D6B3", '1', '0', "1101", '0', "sra x13, x1, x2");
-        check(x"0020A733", '1', '0', "0010", '0', "slt x14, x1, x2");
-        check(x"0020B7B3", '1', '0', "0011", '0', "sltu x15, x1, x2");
+        for i in VECTORS'range loop
+            v := VECTORS(i);
+            instr <= v.instr;
+            wait for 10 ns;
+            if not (std_match(reg_write, v.reg_write) and std_match(alu_src, v.alu_src)
+                    and std_match(alu_op, v.alu_op) and std_match(imm_src, v.imm_src)
+                    and std_match(branch, v.branch) and std_match(illegal, v.illegal)) then
+                report "FAIL " & v.name & " instr=0x" & to_hstring(v.instr)
+                    & " | got rw=" & std_logic'image(reg_write) & " src=" & std_logic'image(alu_src)
+                    & " op=" & to_string(alu_op) & " imm=" & to_string(imm_src)
+                    & " br=" & std_logic'image(branch) & " ill=" & std_logic'image(illegal)
+                    & " | exp rw=" & std_logic'image(v.reg_write) & " src=" & std_logic'image(v.alu_src)
+                    & " op=" & to_string(v.alu_op) & " imm=" & to_string(v.imm_src)
+                    & " br=" & std_logic'image(v.branch) & " ill=" & std_logic'image(v.illegal)
+                    severity error;
+                err := err + 1;
+            end if;
+        end loop;
 
-        check(x"00500093", '1', '1', "0000", '0', "addi x1, x0, 5");
-        check(x"FFF00393", '1', '1', "0000", '0', "addi x7, x0, -1");
-        check(x"40000093", '1', '1', "0000", '0', "addi x1, x0, 1024");
-        check(x"80008093", '1', '1', "0000", '0', "addi x1, x1, -2048");
-        check(x"FE000093", '1', '1', "0000", '0', "addi x1, x0, -32 (funct7 bits not checked for I-type)");
-
-        check(x"022081B3", '0', '0', "0000", '1', "mul x3, x1, x2 (M extension)");
-        check(x"4020F2B3", '0', '0', "0000", '1', "funct7=0100000 with funct3=111");
-        check(x"402095B3", '0', '0', "0000", '1', "funct7=0100000 with funct3=001");
-        check(x"FE2081B3", '0', '0', "0000", '1', "funct7=1111111");
-
-        check(x"00002083", '0', '0', "0000", '1', "lw x1, 0(x0) (not supported yet)");
-        check(x"00102023", '0', '0', "0000", '1', "sw x1, 0(x0) (not supported yet)");
-        check(x"00000063", '0', '0', "0000", '1', "beq x0, x0, 0 (not supported yet)");
-        check(x"00000000", '0', '0', "0000", '1', "all zeros");
-
-        report "Test finished, errors: " & integer'image(errors);
-        wait;
+        if err = 0 then
+            report "tb_control_unit: ALL " & integer'image(VECTORS'length) & " TESTS PASSED" severity note;
+        else
+            report "tb_control_unit: " & integer'image(err) & " / " & integer'image(VECTORS'length) & " FAILED" severity failure;
+        end if;
+        std.env.finish;
     end process;
-
 end architecture sim;
