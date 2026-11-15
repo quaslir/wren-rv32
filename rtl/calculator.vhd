@@ -13,6 +13,7 @@ end entity calculator;
 
 architecture synth of calculator is
     signal reg_write: std_logic := '0';
+    signal illegal: std_logic := '0';
     signal alu_control: std_logic_vector(3 downto 0);
     signal alu_src: std_logic := '0';
 
@@ -36,7 +37,8 @@ begin
             instr     => instr,
             reg_write => reg_write,
             alu_op    => alu_control,
-            alu_src   => alu_src
+            alu_src   => alu_src,
+            illegal   => illegal
         );
 
     alu_inst : entity work.alu
