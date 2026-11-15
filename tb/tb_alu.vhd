@@ -97,7 +97,7 @@ begin
 
   begin
 
-for i in 1 to 100000 loop
+for i in 1 to 10000000 loop
 va := rand_slv32;
 vb := rand_slv32;
 vop := rand_op;
