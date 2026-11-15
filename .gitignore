@@ -1,0 +1,12 @@
+# GHDL
+work-obj*.cf
+*.o
+e~*.o
+
+# RISC-V build
+*.elf
+*.bin
+*.dis
+
+# GTKWave
+*.gtkw.bak

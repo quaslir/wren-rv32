@@ -37,6 +37,10 @@ architecture synth of cpu is
     alias rs1: std_logic_vector(4 downto 0) is instr(19 downto 15);
     alias rd: std_logic_vector(4 downto 0) is instr(11 downto 7);
     signal pc_plus4 : std_logic_vector(31 downto 0) := (others => '0');
+
+    signal pc_target: std_logic_vector(31 downto 0) := (others => '0');
+    signal pc_next: std_logic_vector(31 downto 0) := (others => '0');
+
     constant PC_STEP : std_logic_vector(31 downto 0) := x"00000004";
     constant WIDTH: positive := 32;
 begin
@@ -69,9 +73,35 @@ begin
             port map(
                 clk     => clk,
                 rst     => rst,
-                next_pc => pc_plus4,
+                next_pc => pc_next,
                 pc      => pc
             );
+
+PCTarget
+             : entity work.adder
+                generic map(
+                    WIDTH => WIDTH
+                )
+                port map(
+                    a => pc,
+                    b => imm_ext,
+                    y => pc_target
+                );
+PCMux
+                 : entity work.mux2
+                    generic map(
+                        WIDTH => WIDTH
+                    )
+                    port map(
+                        d0  => pc_plus4,
+                        d1  => pc_target,
+                        sel => branch and zero,
+                        y   => pc_next
+                    );
+                
+            
+            
+
 
             mux2_inst : entity work.mux2
                 generic map(
