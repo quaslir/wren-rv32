@@ -20,7 +20,7 @@ architecture synth of cpu is
     signal alu_src : std_logic := '0';
     signal illegal: std_logic := '0';
     signal imm_src: std_logic_vector(1 downto 0) := (others => '0');
-    signal branch: std_logic := '0';
+    signal pc_src: std_logic := '0';
     signal pc: std_logic_vector(31 downto 0);
 
 
@@ -44,16 +44,21 @@ architecture synth of cpu is
     constant PC_STEP : std_logic_vector(31 downto 0) := x"00000004";
     constant WIDTH: positive := 32;
 begin
-    control_unit_inst : entity work.control_unit
+
+    controller_inst : entity work.controller
         port map(
             instr     => instr,
+            zero      => zero,
             reg_write => reg_write,
-            alu_op    => alu_op,
             alu_src   => alu_src,
             illegal   => illegal,
-            imm_src   => imm_src,
-            branch    => branch
+            pc_src    => pc_src,
+            alu_op    => alu_op,
+            imm_src   => imm_src
         );
+    
+
+
 
         adder_inst : entity work.adder
             generic map(
@@ -95,7 +100,7 @@ PCMux
                     port map(
                         d0  => pc_plus4,
                         d1  => pc_target,
-                        sel => branch and zero,
+                        sel => pc_src,
                         y   => pc_next
                     );
                 

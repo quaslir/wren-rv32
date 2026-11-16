@@ -16,7 +16,7 @@ architecture synth of calculator is
     signal illegal: std_logic := '0';
     signal alu_control: std_logic_vector(3 downto 0);
     signal alu_src: std_logic := '0';
-
+    signal imm_src:std_logic_vector(1 downto 0) := (others => '0');
     signal alu_result: std_logic_vector(31 downto 0) := (others => '0');
     signal zero:std_logic := '0';
 
@@ -62,12 +62,12 @@ begin
                 rd2 => rd2
             );
 
-
-        extend_inst : entity work.extend
-            port map(
-                instr   => instr,
-                imm_ext => imm_ext
-            );
+            extend_inst : entity work.extend
+                port map(
+                    instr   => instr,
+                    imm_src => imm_src,
+                    imm_ext => imm_ext
+                );
 
         mux2_inst : entity work.mux2
             generic map(
