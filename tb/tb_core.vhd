@@ -167,11 +167,29 @@ begin
                     exp   := ref_alu(regs(rs1), imm, '0' & f3);
                 end if;
                 writes := legal;
-            elsif opcode = OP_B and f3 = "000" then
+            elsif opcode = OP_B and f3 /= "010" and f3 /= "011" then
                 legal := true;
                 imm   := (31 downto 12 => v(31)) & v(7) & v(30 downto 25) & v(11 downto 8) & '0';
-                exp   := ref_alu(regs(rs1), regs(rs2), "1000");
-                taken := regs(rs1) = regs(rs2);
+                case f3 is
+                    when "000" =>
+                        exp   := ref_alu(regs(rs1), regs(rs2), "1000");
+                        taken := regs(rs1) = regs(rs2);
+                    when "001" =>
+                        exp   := ref_alu(regs(rs1), regs(rs2), "1000");
+                        taken := regs(rs1) /= regs(rs2);
+                    when "100" =>
+                        exp   := ref_alu(regs(rs1), regs(rs2), "0010");
+                        taken := signed(regs(rs1)) < signed(regs(rs2));
+                    when "101" =>
+                        exp   := ref_alu(regs(rs1), regs(rs2), "0010");
+                        taken := signed(regs(rs1)) >= signed(regs(rs2));
+                    when "110" =>
+                        exp   := ref_alu(regs(rs1), regs(rs2), "0011");
+                        taken := unsigned(regs(rs1)) < unsigned(regs(rs2));
+                    when others =>
+                        exp   := ref_alu(regs(rs1), regs(rs2), "0011");
+                        taken := unsigned(regs(rs1)) >= unsigned(regs(rs2));
+                end case;
             end if;
 
             if pc /= std_logic_vector(m_pc) then
@@ -219,6 +237,7 @@ begin
 
         type f3_arr_t is array (natural range <>) of std_logic_vector(2 downto 0);
         constant I_F3 : f3_arr_t := ("000", "010", "011", "100", "110", "111");
+        constant B_F3 : f3_arr_t := ("000", "001", "100", "101", "110", "111");
     begin
         s1 := SEED1;
         s2 := SEED2;
@@ -268,7 +287,7 @@ begin
                 n_b := n_b + 1;
                 rs1 := rnd_reg;
                 if rnd(2) = 1 then rs2 := rs1; else rs2 := rnd_reg; end if;
-                v := enc_b(2 * (rnd(4096) - 2048), rs2, rs1, "000");
+                v := enc_b(2 * (rnd(4096) - 2048), rs2, rs1, B_F3(rnd(6)));
             elsif kind < 92 then
                 v := enc_r("0000001", rnd_reg, rnd_reg, std_logic_vector(to_unsigned(rnd(8), 3)), rnd_reg);
             elsif kind < 94 then
@@ -280,7 +299,7 @@ begin
                 v := f7 & std_logic_vector(to_unsigned(rnd(32), 5)) & std_logic_vector(to_unsigned(rnd_reg, 5))
                     & f3 & std_logic_vector(to_unsigned(rnd_reg, 5)) & OP_I;
             elsif kind < 98 then
-                v := enc_b(8, rnd_reg, rnd_reg, std_logic_vector(to_unsigned(1 + rnd(7), 3)));
+                v := enc_b(8, rnd_reg, rnd_reg, std_logic_vector(to_unsigned(2 + rnd(2), 3)));
             else
                 v := rnd_word;
                 if v(6 downto 0) = OP_R or v(6 downto 0) = OP_I or v(6 downto 0) = OP_B then
@@ -293,7 +312,7 @@ begin
         check_regs;
 
         report "cycles " & integer'image(cnt) & ": R " & integer'image(n_r) & ", I " & integer'image(n_i)
-            & ", beq " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), illegal " & integer'image(n_ill) severity note;
+            & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), illegal " & integer'image(n_ill) severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else

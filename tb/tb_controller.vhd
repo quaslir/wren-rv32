@@ -29,13 +29,15 @@ architecture sim of tb_controller is
         x"002081B3", x"40208233", x"0020F2B3", x"00500093", x"FFF00393",
         x"00504093", x"40315093", x"00208463", x"FE000CE3", x"00418C63",
         x"00209463", x"02208233", x"00002083", x"00112023", x"008000EF",
-        x"00000000", x"FFFFFFFF", x"40311093"
+        x"00000000", x"FFFFFFFF", x"40311093",
+        x"0020C463", x"0020D463", x"0020E463", x"0020F463", x"0020A463", x"0020B463"
     );
     constant NAMES : name_array_t := (
         "add         ", "sub         ", "and         ", "addi 5      ", "addi -1     ",
         "xori        ", "srai        ", "beq +8      ", "beq -8      ", "beq +24     ",
         "bne         ", "mul         ", "lw          ", "sw          ", "jal         ",
-        "zero        ", "ones        ", "slli bad f7 "
+        "zero        ", "ones        ", "slli bad f7 ",
+        "blt         ", "bge         ", "bltu        ", "bgeu        ", "b funct3 010", "b funct3 011"
     );
 begin
     dut : entity work.controller
@@ -65,7 +67,8 @@ begin
         variable err      : natural := 0;
         variable cnt      : natural := 0;
         variable exp_src  : std_logic;
-        variable is_beq   : boolean;
+        variable is_branch : boolean;
+        variable f3       : std_logic_vector(2 downto 0);
         variable z        : std_logic;
     begin
         for i in INSTRS'range loop
@@ -80,8 +83,9 @@ begin
                 wait for 10 ns;
                 cnt := cnt + 1;
 
-                is_beq := INSTRS(i)(6 downto 0) = "1100011" and INSTRS(i)(14 downto 12) = "000";
-                if is_beq and z = '1' then
+                f3 := INSTRS(i)(14 downto 12);
+                is_branch := INSTRS(i)(6 downto 0) = "1100011" and f3 /= "010" and f3 /= "011";
+                if is_branch and ((f3 = "000" or f3 = "101" or f3 = "111") = (z = '1')) then
                     exp_src := '1';
                 else
                     exp_src := '0';

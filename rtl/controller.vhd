@@ -18,6 +18,8 @@ end entity controller;
 architecture synth of controller is
 
 signal branch: std_logic := '0';
+
+alias funct3 : std_logic_vector(2 downto 0) is instr(14 downto 12);
 begin
     control_unit_inst : entity work.control_unit
         port map(
@@ -29,6 +31,6 @@ begin
             imm_src   => imm_src,
             branch    => branch
         );
-    pc_src <= branch and zero;
-   
+
+        pc_src <= branch and (funct3(2) xor zero xor funct3(0));
 end architecture synth;

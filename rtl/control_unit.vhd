@@ -76,13 +76,23 @@ begin
                 end case;
 
             when "1100011" =>
-                if funct3 = "000" then
+
+                case funct3 is
+                    when "000" | "001" => 
                     imm_src <= "10";
                     branch  <= '1';
                     alu_op  <= "1000";
-                else
-                    illegal <= '1';
-                end if;
+                    when "100" | "101" => 
+                    imm_src <= "10";
+                    branch <= '1';
+                    alu_op <= "0010";
+                    when "110" | "111" => 
+                    imm_src <= "10";
+                    branch <= '1';
+                    alu_op <= "0011";
+                    when others => illegal <= '1';
+                end case;
+            
             when others =>
                 illegal <= '1';
         end case;
