@@ -9,8 +9,9 @@ entity controller is
        zero: in std_logic;
        reg_write, alu_src, illegal, pc_src: out std_logic;
        alu_op: out std_logic_vector(3 downto 0);
-       imm_src: out std_logic_vector(1 downto 0)
-
+       imm_src: out std_logic_vector(1 downto 0);
+       mem_write: out std_logic;
+       result_src: out std_logic
     );
 end entity controller;
 
@@ -29,8 +30,10 @@ begin
             alu_src   => alu_src,
             illegal   => illegal,
             imm_src   => imm_src,
-            branch    => branch
-        );
-
+            branch    => branch,
+            mem_write => mem_write,
+            result_src => result_src
+        );       
         pc_src <= branch and (funct3(2) xor zero xor funct3(0));
 end architecture synth;
+

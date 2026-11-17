@@ -14,7 +14,10 @@ entity datapath is
         instr     : in  std_logic_vector(31 downto 0);
         alu_result    : out std_logic_vector(31 downto 0);
         zero      : out std_logic;
-        pc        : out std_logic_vector(31 downto 0)
+        pc        : out std_logic_vector(31 downto 0);
+        result_src: in std_logic;
+        read_data: in std_logic_vector(31 downto 0);
+        write_data : out std_logic_vector(31 downto 0)
     );
 end entity datapath;
 
@@ -32,6 +35,8 @@ architecture synth of datapath is
     alias rs2 : std_logic_vector(4 downto 0) is instr(24 downto 20);
     alias rs1 : std_logic_vector(4 downto 0) is instr(19 downto 15);
     alias rd  : std_logic_vector(4 downto 0) is instr(11 downto 7);
+
+    signal result: std_logic_vector(31 downto 0) := (others => '0');
 begin
     alu_inst : entity work.alu
         port map(
@@ -101,7 +106,7 @@ begin
             ra1 => rs1,
             ra2 => rs2,
             wa  => rd,
-            wd  => alu_result,
+            wd  => result,
             rd1 => rd1,
             rd2 => rd2
         );
@@ -113,4 +118,16 @@ begin
             imm_ext => imm_ext
         );
 
+        ResultMux : entity work.mux2
+            generic map(
+                WIDTH => 32
+            )
+            port map(
+                d0  => alu_result,
+                d1  => read_data,
+                sel => result_src,
+                y   => result
+            );
+        
+write_data <= rd2;
 end architecture synth;

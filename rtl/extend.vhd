@@ -18,6 +18,7 @@ begin
         imm_ext <=
             (31 downto 12  => instr(31)) & instr(31 downto 20) when "00",
             (31 downto 12 => instr(31)) & instr(7) & instr(30 downto 25) & instr(11 downto 8) & '0' when "10",
+            (31 downto 12 => instr(31)) & instr(31 downto 25) & instr(11 downto 7) when "01",
             (others => '0') when others;
     
 end architecture synth;

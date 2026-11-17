@@ -25,6 +25,9 @@ architecture sim of tb_datapath is
     signal result    : std_logic_vector(31 downto 0);
     signal zero      : std_logic;
     signal pc        : std_logic_vector(31 downto 0);
+    signal result_src : std_logic := '0';
+    signal read_data  : std_logic_vector(31 downto 0) := (others => '0');
+    signal write_data : std_logic_vector(31 downto 0);
     signal done      : boolean := false;
 
     type regs_t is array (0 to 31) of std_logic_vector(31 downto 0);
@@ -73,7 +76,10 @@ begin
             instr     => instr,
             alu_result => result,
             zero      => zero,
-            pc        => pc
+            pc        => pc,
+            result_src => result_src,
+            read_data  => read_data,
+            write_data => write_data
         );
 
     clk <= not clk after CLK_PERIOD / 2 when not done;
@@ -93,6 +99,8 @@ begin
         variable v_asrc   : std_logic;
         variable v_we     : std_logic;
         variable v_psrc   : std_logic;
+        variable v_rsrc   : std_logic := '0';
+        variable v_rdata  : std_logic_vector(31 downto 0) := (others => '0');
         variable imm      : std_logic_vector(31 downto 0);
         variable a, b     : std_logic_vector(31 downto 0);
         variable exp      : std_logic_vector(31 downto 0);
@@ -135,6 +143,8 @@ begin
             alu_src   <= v_asrc;
             reg_write <= v_we;
             pc_src    <= v_psrc;
+            result_src <= v_rsrc;
+            read_data  <= v_rdata;
             wait for 2 ns;
 
             rs1 := to_integer(unsigned(v_instr(19 downto 15)));
@@ -155,6 +165,9 @@ begin
                     & " op=" & to_string(v_op) & " alu_src=" & std_logic'image(v_asrc)
                     & " rs1=x" & integer'image(rs1) & " rs2=x" & integer'image(rs2));
             end if;
+            if write_data /= regs(rs2) then
+                fail("write_data got=0x" & to_hstring(write_data) & " expected rs2=x" & integer'image(rs2) & "=0x" & to_hstring(regs(rs2)));
+            end if;
             if zero /= exp_zero then
                 fail("zero got=" & std_logic'image(zero) & " expected=" & std_logic'image(exp_zero));
             end if;
@@ -165,7 +178,11 @@ begin
             wait until rising_edge(clk);
 
             if v_we = '1' and rd /= 0 then
-                regs(rd) := exp;
+                if v_rsrc = '1' then
+                    regs(rd) := v_rdata;
+                else
+                    regs(rd) := exp;
+                end if;
             end if;
             if v_psrc = '1' then
                 m_pc := m_pc + unsigned(imm);
@@ -216,6 +233,20 @@ begin
         v_op := "0000"; v_isrc := "00"; v_asrc := '0'; v_we := '0'; v_psrc := '0';
         step;
 
+        for i in 1 to 31 loop
+            v_instr := rnd_word;
+            v_instr(11 downto 7) := std_logic_vector(to_unsigned(i, 5));
+            v_op   := "0000";
+            v_isrc := "00";
+            v_asrc := '1';
+            v_we   := '1';
+            v_psrc := '0';
+            v_rsrc := '1';
+            v_rdata := rnd_word;
+            step;
+        end loop;
+        v_rsrc := '0';
+
         for i in 1 to N_RANDOM loop
             v_instr := rnd_word;
             v_op    := OPS(rnd(10));
@@ -223,6 +254,8 @@ begin
             v_asrc  := rnd_bit;
             v_we    := rnd_bit;
             v_psrc  := rnd_bit;
+            v_rsrc  := rnd_bit;
+            v_rdata := rnd_word;
             if rnd(4) = 0 then
                 v_instr(24 downto 20) := v_instr(19 downto 15);
                 v_op   := "1000";

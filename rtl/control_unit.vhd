@@ -10,7 +10,9 @@ entity control_unit is
         alu_src   : out std_logic;
         illegal   : out std_logic;
         imm_src   : out std_logic_vector(1 downto 0);
-        branch    : out std_logic
+        branch    : out std_logic;
+        mem_write: out std_logic;
+        result_src: out std_logic
     );
 end entity control_unit;
 
@@ -29,6 +31,8 @@ begin
         illegal   <= '0';
         imm_src   <= "00";
         branch    <= '0';
+        mem_write <= '0';
+        result_src <= '0';
         case opcode is
             when "0110011" =>
                 if funct7 = "0000000" then
@@ -92,7 +96,25 @@ begin
                     alu_op <= "0011";
                     when others => illegal <= '1';
                 end case;
-            
+            when "0000011" =>
+                case funct3 is
+                    when "010" => 
+                        reg_write <= '1';
+                        alu_src <= '1';
+                        imm_src <= "00";
+                        result_src <= '1';
+                    when others => illegal <= '1';
+                end case;
+            when "0100011" =>
+                case funct3 is
+                    when "010" =>
+                    imm_src <= "01";
+                    alu_src <= '1';
+                    mem_write <='1';
+
+                    when others => illegal <= '1';
+                end case;
+                
             when others =>
                 illegal <= '1';
         end case;

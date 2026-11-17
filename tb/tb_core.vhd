@@ -7,7 +7,8 @@ entity tb_core is
     generic(
         N_RANDOM : natural := 10000;
         SEED1    : positive := 5;
-        SEED2    : positive := 77
+        SEED2    : positive := 77;
+        MEM_DEPTH : positive := 64
     );
 end entity tb_core;
 
@@ -20,13 +21,29 @@ architecture sim of tb_core is
     signal illegal    : std_logic;
     signal alu_result : std_logic_vector(31 downto 0);
     signal pc         : std_logic_vector(31 downto 0);
+    signal read_data  : std_logic_vector(31 downto 0);
+    signal mem_write  : std_logic;
+    signal write_data : std_logic_vector(31 downto 0);
     signal done       : boolean := false;
 
     type regs_t is array (0 to 31) of std_logic_vector(31 downto 0);
+    type mem_t is array (0 to MEM_DEPTH - 1) of std_logic_vector(31 downto 0);
+    signal dmem : mem_t := (others => (others => '0'));
 
     constant OP_R    : std_logic_vector(6 downto 0) := "0110011";
     constant OP_I    : std_logic_vector(6 downto 0) := "0010011";
     constant OP_B    : std_logic_vector(6 downto 0) := "1100011";
+    constant OP_L    : std_logic_vector(6 downto 0) := "0000011";
+    constant OP_S    : std_logic_vector(6 downto 0) := "0100011";
+
+    function word_of(a : std_logic_vector(31 downto 0)) return natural is
+    begin
+        if unsigned(a(31 downto 2)) < MEM_DEPTH then
+            return to_integer(unsigned(a(31 downto 2)));
+        else
+            return MEM_DEPTH;
+        end if;
+    end function;
 
     function ref_alu(a, b : std_logic_vector(31 downto 0); op : std_logic_vector(3 downto 0)) return std_logic_vector is
         variable sh : natural := to_integer(unsigned(b(4 downto 0)));
@@ -60,6 +77,19 @@ architecture sim of tb_core is
             & std_logic_vector(to_unsigned(rd, 5)) & OP_I;
     end function;
 
+    function enc_l(imm : integer; rs1 : natural; f3 : std_logic_vector(2 downto 0); rd : natural) return std_logic_vector is
+    begin
+        return std_logic_vector(to_signed(imm, 12)) & std_logic_vector(to_unsigned(rs1, 5)) & f3
+            & std_logic_vector(to_unsigned(rd, 5)) & OP_L;
+    end function;
+
+    function enc_s(imm : integer; rs2, rs1 : natural; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
+    begin
+        return u(11 downto 5) & std_logic_vector(to_unsigned(rs2, 5)) & std_logic_vector(to_unsigned(rs1, 5))
+            & f3 & u(4 downto 0) & OP_S;
+    end function;
+
     function enc_b(imm : integer; rs2, rs1 : natural; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
         variable u : std_logic_vector(12 downto 0) := std_logic_vector(to_signed(imm, 13));
     begin
@@ -74,8 +104,13 @@ begin
             instr      => instr,
             illegal    => illegal,
             alu_result => alu_result,
-            pc         => pc
+            pc         => pc,
+            read_data  => read_data,
+            mem_write  => mem_write,
+            write_data => write_data
         );
+
+    read_data <= dmem(word_of(alu_result)) when word_of(alu_result) < MEM_DEPTH else (others => '0');
 
     clk <= not clk after CLK_PERIOD / 2 when not done;
 
@@ -86,7 +121,11 @@ begin
         variable m_pc        : unsigned(31 downto 0) := (others => '0');
         variable err         : natural := 0;
         variable cnt         : natural := 0;
-        variable n_r, n_i, n_b, n_taken, n_ill : natural := 0;
+        variable n_r, n_i, n_b, n_taken, n_ill, n_lw, n_sw : natural := 0;
+        variable mem         : mem_t := (others => (others => '0'));
+        variable loads       : boolean;
+        variable stores      : boolean;
+        variable ld_val      : std_logic_vector(31 downto 0);
         variable v           : std_logic_vector(31 downto 0);
         variable opcode      : std_logic_vector(6 downto 0);
         variable f3          : std_logic_vector(2 downto 0);
@@ -146,6 +185,8 @@ begin
             legal  := false;
             writes := false;
             taken  := false;
+            loads  := false;
+            stores := false;
             exp    := (others => '0');
 
             if opcode = OP_R then
@@ -190,6 +231,22 @@ begin
                         exp   := ref_alu(regs(rs1), regs(rs2), "0011");
                         taken := unsigned(regs(rs1)) >= unsigned(regs(rs2));
                 end case;
+            elsif opcode = OP_L and f3 = "010" then
+                legal  := true;
+                writes := true;
+                loads  := true;
+                imm    := (31 downto 12 => v(31)) & v(31 downto 20);
+                exp    := ref_alu(regs(rs1), imm, "0000");
+                if word_of(exp) < MEM_DEPTH then
+                    ld_val := mem(word_of(exp));
+                else
+                    ld_val := x"00000000";
+                end if;
+            elsif opcode = OP_S and f3 = "010" then
+                legal  := true;
+                stores := true;
+                imm    := (31 downto 12 => v(31)) & v(31 downto 25) & v(11 downto 7);
+                exp    := ref_alu(regs(rs1), imm, "0000");
             end if;
 
             if pc /= std_logic_vector(m_pc) then
@@ -202,17 +259,35 @@ begin
                 if alu_result /= exp then
                     fail("alu_result got=0x" & to_hstring(alu_result) & " expected=0x" & to_hstring(exp));
                 end if;
+                if stores then
+                    if write_data /= regs(rs2) then
+                        fail("sw write_data got=0x" & to_hstring(write_data) & " expected=0x" & to_hstring(regs(rs2)));
+                    end if;
+                end if;
             else
                 if illegal /= '1' then
                     fail("illegal=0 for illegal instruction");
                 end if;
                 n_ill := n_ill + 1;
             end if;
+            if stores and mem_write /= '1' then
+                fail("sw: mem_write=" & std_logic'image(mem_write) & ", expected '1'");
+            elsif not stores and mem_write /= '0' then
+                fail("non-store: mem_write=" & std_logic'image(mem_write) & ", expected '0'");
+            end if;
 
             wait until rising_edge(clk);
 
             if writes and rd /= 0 then
-                regs(rd) := exp;
+                if loads then
+                    regs(rd) := ld_val;
+                else
+                    regs(rd) := exp;
+                end if;
+            end if;
+            if stores and word_of(exp) < MEM_DEPTH then
+                mem(word_of(exp)) := regs(rs2);
+                dmem <= mem;
             end if;
             if taken then
                 m_pc := m_pc + unsigned(imm);
@@ -238,6 +313,20 @@ begin
         type f3_arr_t is array (natural range <>) of std_logic_vector(2 downto 0);
         constant I_F3 : f3_arr_t := ("000", "010", "011", "100", "110", "111");
         constant B_F3 : f3_arr_t := ("000", "001", "100", "101", "110", "111");
+        constant BAD_LS_F3 : f3_arr_t := ("000", "001", "011", "100", "101", "110", "111");
+
+        procedure check_mem is
+        begin
+            for i in 0 to MEM_DEPTH - 1 loop
+                v := enc_l(4 * i, 0, "010", 31);
+                step;
+                v := enc_r("0000000", 0, 31, "000", 0);
+                step;
+                if alu_result /= mem(i) then
+                    fail("mem[" & integer'image(i) & "] got=0x" & to_hstring(alu_result) & " expected=0x" & to_hstring(mem(i)));
+                end if;
+            end loop;
+        end procedure;
     begin
         s1 := SEED1;
         s2 := SEED2;
@@ -263,6 +352,34 @@ begin
         check_regs;
 
         for n in 1 to N_RANDOM loop
+            kind := rnd(100);
+            if kind < 12 then
+                n_lw := n_lw + 1;
+                if rnd(4) = 0 then
+                    v := enc_l(rnd(4096) - 2048, rnd_reg, "010", rnd_reg);
+                else
+                    v := enc_l(4 * rnd(MEM_DEPTH + 4), 0, "010", rnd_reg);
+                end if;
+                step;
+                next;
+            elsif kind < 24 then
+                n_sw := n_sw + 1;
+                if rnd(4) = 0 then
+                    v := enc_s(rnd(4096) - 2048, rnd_reg, rnd_reg, "010");
+                else
+                    v := enc_s(4 * rnd(MEM_DEPTH + 4), rnd_reg, 0, "010");
+                end if;
+                step;
+                next;
+            elsif kind < 26 then
+                if rnd(2) = 1 then
+                    v := enc_l(4 * rnd(MEM_DEPTH), 0, BAD_LS_F3(rnd(7)), rnd_reg);
+                else
+                    v := enc_s(4 * rnd(MEM_DEPTH), rnd_reg, 0, BAD_LS_F3(1 + rnd(6)));
+                end if;
+                step;
+                next;
+            end if;
             kind := rnd(100);
             if kind < 35 then
                 n_r := n_r + 1;
@@ -302,17 +419,20 @@ begin
                 v := enc_b(8, rnd_reg, rnd_reg, std_logic_vector(to_unsigned(2 + rnd(2), 3)));
             else
                 v := rnd_word;
-                if v(6 downto 0) = OP_R or v(6 downto 0) = OP_I or v(6 downto 0) = OP_B then
-                    v(6 downto 0) := "0000011";
+                if v(6 downto 0) = OP_R or v(6 downto 0) = OP_I or v(6 downto 0) = OP_B
+                   or v(6 downto 0) = OP_L or v(6 downto 0) = OP_S then
+                    v(6 downto 0) := "0001011";
                 end if;
             end if;
             step;
         end loop;
 
         check_regs;
+        check_mem;
 
         report "cycles " & integer'image(cnt) & ": R " & integer'image(n_r) & ", I " & integer'image(n_i)
-            & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), illegal " & integer'image(n_ill) severity note;
+            & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), lw " & integer'image(n_lw)
+            & ", sw " & integer'image(n_sw) & ", illegal " & integer'image(n_ill) severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else

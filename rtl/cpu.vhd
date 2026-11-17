@@ -16,19 +16,26 @@ architecture synth of cpu is
     signal illegal: std_logic := '0';
     signal alu_result: std_logic_vector(31 downto 0) := (others => '0');
     signal pc: std_logic_vector(31 downto 0) := (others => '0');
-
+    signal mem_write: std_logic := '0';
+    signal write_data: std_logic_vector(31 downto 0) := (others => '0');
+    signal read_data: std_logic_vector(31 downto 0) := (others => '0');
+ 
 begin
 
-    core_inst : entity work.core
-        port map(
-            clk        => clk,
-            rst        => rst,
-            instr      => instr,
-            illegal    => illegal,
-            alu_result => alu_result,
-            pc         => pc
-        );
+
     
+core_inst : entity work.core
+    port map(
+        clk        => clk,
+        rst        => rst,
+        instr      => instr,
+        read_data  => read_data,
+        illegal    => illegal,
+        alu_result => alu_result,
+        pc         => pc,
+        mem_write  => mem_write,
+        write_data => write_data
+    );
 
     instr_mem_inst : entity work.instr_mem
         generic map(
@@ -40,5 +47,19 @@ begin
             instr => instr
         );
 
-    result <= alu_result;
+        data_mem_inst : entity work.data_mem
+            generic map(
+                DEPTH => 32
+            )
+            port map(
+                clk  => clk,
+                we   => mem_write,
+                addr => alu_result,
+                wd   => write_data,
+                rd   => read_data
+            );
+        
+
+result <= alu_result;
+        
 end architecture synth;
