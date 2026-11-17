@@ -79,7 +79,7 @@ begin
 
         report "Test finished, errors: " & integer'image(errors);
         done <= true;
-        wait;
+        std.env.finish;
     end process;
 
 end architecture sim;

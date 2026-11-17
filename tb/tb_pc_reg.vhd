@@ -75,12 +75,17 @@ begin
         step('0', x"12345678", x"12345678", "load arbitrary value");
         step('0', x"FFFFFFFC", x"FFFFFFFC", "load max aligned address");
 
+        wait until falling_edge(clk);
+        rst <= '1';
+        wait for 1 ns;
+        check(x"FFFFFFFC", "sync reset: pc must wait for edge");
+
         step('1', x"00000010", x"00000000", "reset in the middle");
         step('0', x"00000010", x"00000010", "run after reset");
 
         report "Test finished, errors: " & integer'image(errors);
         done <= true;
-        wait;
+        std.env.finish;
     end process;
 
 end architecture sim;

@@ -41,6 +41,7 @@ riscv_ram_inst : entity work.regfile
     end loop;
 
     we <= '0';
+    wd <= (others => '1');
 
    for i in 0 to 5 loop
     ra1 <= std_logic_vector(to_unsigned(i, 5));
@@ -69,6 +70,6 @@ end loop;
 report "Read tests done";
 
 
-    wait;
+    std.env.finish;
     end process;
 end architecture sim;

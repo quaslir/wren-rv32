@@ -9,6 +9,9 @@ architecture sim of tb_alu is
     type op_array_t is array (natural range <>) of std_logic_vector(3 downto 0);
     constant OPS : op_array_t := ("0000", "1000", "0001", "0010", "0011",
     "0100", "0101", "0110", "0111", "1101");
+    type word_array_t is array (natural range <>) of std_logic_vector(31 downto 0);
+    constant EDGES : word_array_t := (x"00000000", x"00000001", x"FFFFFFFF", x"7FFFFFFF",
+    x"80000000", x"0000001F", x"00000010", x"00000020");
     
   signal value1           : std_logic_vector(31 downto 0) := (others => '0');
   signal value2           : std_logic_vector(31 downto 0) := (others => '0');
@@ -95,12 +98,8 @@ begin
 
 
 
-  begin
-
-for i in 1 to 10000000 loop
-va := rand_slv32;
-vb := rand_slv32;
-vop := rand_op;
+     procedure check(i: integer) is
+     begin
 vexp := expected(va, vb, vop);
 if vexp = x"00000000" then vzero := '1'; 
 else vzero := '0';
@@ -129,11 +128,31 @@ errors := errors + 1;
            " got_zero=" & std_logic'image(zero)
            severity error;
 end if;
+     end procedure check;
+
+  begin
+
+for i in EDGES'range loop
+for j in EDGES'range loop
+for k in OPS'range loop
+va := EDGES(i);
+vb := EDGES(j);
+vop := OPS(k);
+check(-1);
+end loop;
+end loop;
+end loop;
+
+for i in 1 to 100000 loop
+va := rand_slv32;
+vb := rand_slv32;
+vop := rand_op;
+check(i);
 end loop;
 
 report "Random test finished, errors: " & integer'image(errors);
 
-wait;
+std.env.finish;
 
   end process;
 

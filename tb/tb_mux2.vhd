@@ -74,7 +74,7 @@ begin
         end loop;
 
         report "Test finished, errors: " & integer'image(errors);
-        wait;
+        std.env.finish;
     end process;
 
 end architecture sim;

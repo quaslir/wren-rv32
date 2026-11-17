@@ -19,11 +19,24 @@ pass=0; fail=0; failed=()
 run() {
     local name="$1" logname="$2"; shift 2
     local log="$LOG_DIR/$logname.log"
-    if ghdl -m --std=08 "$name" > "$log" 2>&1 &&
-       timeout 60 ghdl -r --std=08 "$name" --ieee-asserts=disable-at-0 --stop-time=10ms "$@" >> "$log" 2>&1; then
+    local rc reason=""
+    if ! ghdl -m --std=08 "$name" > "$log" 2>&1; then
+        reason="elaboration"
+    else
+        timeout 60 ghdl -r --std=08 "$name" --ieee-asserts=disable-at-0 --assert-level=error --stop-time=10ms "$@" >> "$log" 2>&1
+        rc=$?
+        if [ "$rc" -eq 124 ]; then
+            reason="timeout"
+        elif [ "$rc" -ne 0 ]; then
+            reason="exit $rc"
+        elif grep -q 'simulation stopped by --stop-time' "$log"; then
+            reason="stop-time"
+        fi
+    fi
+    if [ -z "$reason" ]; then
         echo "PASS  $name $*"; pass=$((pass + 1))
     else
-        echo "FAIL  $name $*  (log: $log)"; fail=$((fail + 1)); failed+=("$logname")
+        echo "FAIL ($reason)  $name $*  (log: $log)"; fail=$((fail + 1)); failed+=("$logname")
     fi
 }
 
