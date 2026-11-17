@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testbenches:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GHDL_VERSION: v4.1.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GHDL from apt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ghdl
+
+      - name: Fall back to official GHDL release if apt version < 4.0
+        run: |
+          major=$(ghdl --version 2>/dev/null | grep -oP 'GHDL \K[0-9]+' | head -1 || true)
+          echo "apt GHDL major version: ${major:-none}"
+          if [ -z "$major" ] || [ "$major" -lt 4 ]; then
+            sudo apt-get remove -y 'ghdl*' || true
+            url="https://github.com/ghdl/ghdl/releases/download/${GHDL_VERSION}/ghdl-mcode-${GHDL_VERSION#v}-ubuntu22.04-x86_64.tgz"
+            mkdir -p "$HOME/ghdl"
+            curl -fsSL "$url" | tar -xz -C "$HOME/ghdl" --strip-components=1
+            echo "$HOME/ghdl/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: GHDL version
+        run: ghdl --version
+
+      - name: Run testbenches
+        run: |
+          chmod +x run_tests.sh
+          ./run_tests.sh
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghdl-logs
+          path: /tmp/*.log
+          if-no-files-found: warn

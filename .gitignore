@@ -10,3 +10,9 @@ e~*.o
 
 # GTKWave
 *.gtkw.bak
+*.cf
+*.ghw
+*.vcd
+
+# Keep committed program images used by testbenches
+!sw/*.hex

@@ -111,7 +111,6 @@ begin
                     imm_src <= "001";
                     alu_src <= '1';
                     mem_write <='1';
-
                     when others => illegal <= '1';
                 end case;
                 

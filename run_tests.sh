@@ -1,28 +1,42 @@
 #!/usr/bin/env bash
+# Runs every testbench in tb/ with GHDL (VHDL-2008).
+# Exit code is non-zero if analysis fails or any testbench fails.
+# Logs: $LOG_DIR/<name>.log (default /tmp).
+set -uo pipefail   # no -e: failures are counted, not fatal
 cd "$(dirname "$0")"
 
+LOG_DIR="${LOG_DIR:-/tmp}"
+mkdir -p "$LOG_DIR"
+
 rm -f work-obj08.cf
-ghdl -i --std=08 rtl/*.vhd tb/*.vhd
+if ! ghdl -i --std=08 rtl/*.vhd tb/*.vhd; then
+    echo "FAIL  ghdl -i (import/analysis)"
+    exit 1
+fi
 
 pass=0; fail=0; failed=()
 
 run() {
-    local name="$1"; shift
-    if ghdl -m --std=08 "$name" >/dev/null 2>&1 &&
-       timeout 60 ghdl -r --std=08 "$name" --ieee-asserts=disable-at-0 --stop-time=10ms "$@" > "/tmp/$name.log" 2>&1; then
+    local name="$1" logname="$2"; shift 2
+    local log="$LOG_DIR/$logname.log"
+    if ghdl -m --std=08 "$name" > "$log" 2>&1 &&
+       timeout 60 ghdl -r --std=08 "$name" --ieee-asserts=disable-at-0 --stop-time=10ms "$@" >> "$log" 2>&1; then
         echo "PASS  $name $*"; pass=$((pass + 1))
     else
-        echo "FAIL  $name $*  (лог: /tmp/$name.log)"; fail=$((fail + 1)); failed+=("$name")
+        echo "FAIL  $name $*  (log: $log)"; fail=$((fail + 1)); failed+=("$logname")
     fi
 }
+
 for tb in $(grep -hoP '^entity\s+\K\w+' tb/*.vhd); do
     [ "$tb" = tb_cpu_prog ] && continue
-    run "$tb"
+    run "$tb" "$tb"
 done
 
-run tb_cpu_prog -gPROG=sw/main.hex  -gEXPECTED=6765
-
+if grep -qP '^entity\s+tb_cpu_prog\b' tb/*.vhd; then
+    run tb_cpu_prog tb_cpu_prog_main -gPROG=sw/main.hex -gEXPECTED=6765
+fi
 
 echo "-----"
 echo "passed: $pass, failed: $fail"
-[ $fail -eq 0 ]
+[ "$fail" -gt 0 ] && echo "failed: ${failed[*]}"
+[ "$fail" -eq 0 ]
