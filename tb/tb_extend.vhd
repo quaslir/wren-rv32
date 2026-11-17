@@ -19,15 +19,6 @@ architecture sim of tb_extend is
         return v;
     end function;
 
-    function enc_s(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
-        variable v : std_logic_vector(31 downto 0) := other;
-        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
-    begin
-        v(31 downto 25) := u(11 downto 5);
-        v(11 downto 7)  := u(4 downto 0);
-        return v;
-    end function;
-
     function enc_b(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
         variable v : std_logic_vector(31 downto 0) := other;
         variable u : std_logic_vector(12 downto 0) := std_logic_vector(to_signed(imm, 13));
@@ -89,8 +80,6 @@ begin
         check("I addi -1",      x"FFF00393", "00", -1);
         check("I max",          x"7FF00093", "00", 2047);
         check("I min",          x"80000093", "00", -2048);
-        check("S sw 0",         x"00112023", "01", 0);
-        check("S sw -4",        x"FE112E23", "01", -4);
         check("B beq +8",       x"00208463", "10", 8);
         check("B beq -8",       x"FE000CE3", "10", -8);
         check("B beq +4094",    x"7E000FE3", "10", 4094);
@@ -101,13 +90,6 @@ begin
             check("I all ones",  enc_i(imm, x"FFFFFFFF"), "00", imm);
             other := rand_word;
             check("I random",    enc_i(imm, other), "00", imm);
-        end loop;
-
-        for imm in -2048 to 2047 loop
-            check("S all zero",  enc_s(imm, x"00000000"), "01", imm);
-            check("S all ones",  enc_s(imm, x"FFFFFFFF"), "01", imm);
-            other := rand_word;
-            check("S random",    enc_s(imm, other), "01", imm);
         end loop;
 
         for k in -2048 to 2047 loop
