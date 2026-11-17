@@ -71,7 +71,7 @@ begin
             imm_src   => imm_src,
             alu_op    => alu_op,
             instr     => instr,
-            result    => result,
+            alu_result => result,
             zero      => zero,
             pc        => pc
         );

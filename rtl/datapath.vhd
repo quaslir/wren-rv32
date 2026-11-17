@@ -12,7 +12,7 @@ entity datapath is
         imm_src   : in  std_logic_vector(1 downto 0);
         alu_op    : in  std_logic_vector(3 downto 0);
         instr     : in  std_logic_vector(31 downto 0);
-        result    : out std_logic_vector(31 downto 0);
+        alu_result    : out std_logic_vector(31 downto 0);
         zero      : out std_logic;
         pc        : out std_logic_vector(31 downto 0)
     );
@@ -38,7 +38,7 @@ begin
             a           => rd1,
             b           => mux_y,
             alu_control => alu_op,
-            result      => result,
+            result      => alu_result,
             zero        => zero
         );
 
@@ -101,7 +101,7 @@ begin
             ra1 => rs1,
             ra2 => rs2,
             wa  => rd,
-            wd  => result,
+            wd  => alu_result,
             rd1 => rd1,
             rd2 => rd2
         );
