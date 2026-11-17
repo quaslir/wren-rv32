@@ -9,13 +9,13 @@ entity datapath is
         pc_src    : in  std_logic;
         alu_src   : in  std_logic;
         reg_write : in  std_logic;
-        imm_src   : in  std_logic_vector(1 downto 0);
+        imm_src   : in  std_logic_vector(2 downto 0);
         alu_op    : in  std_logic_vector(3 downto 0);
         instr     : in  std_logic_vector(31 downto 0);
         alu_result    : out std_logic_vector(31 downto 0);
         zero      : out std_logic;
         pc        : out std_logic_vector(31 downto 0);
-        result_src: in std_logic;
+        result_src: in std_logic_vector(1 downto 0);
         read_data: in std_logic_vector(31 downto 0);
         write_data : out std_logic_vector(31 downto 0)
     );
@@ -118,16 +118,21 @@ begin
             imm_ext => imm_ext
         );
 
-        ResultMux : entity work.mux2
+
+        ResultMux : entity work.mux4
             generic map(
                 WIDTH => 32
             )
             port map(
                 d0  => alu_result,
                 d1  => read_data,
+                d2  => pc_plus4,
+                d3  => imm_ext,
                 sel => result_src,
                 y   => result
             );
+        
+
         
 write_data <= rd2;
 end architecture synth;

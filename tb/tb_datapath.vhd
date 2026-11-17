@@ -19,13 +19,13 @@ architecture sim of tb_datapath is
     signal pc_src    : std_logic := '0';
     signal alu_src   : std_logic := '0';
     signal reg_write : std_logic := '0';
-    signal imm_src   : std_logic_vector(1 downto 0) := "00";
+    signal imm_src   : std_logic_vector(2 downto 0) := "000";
     signal alu_op    : std_logic_vector(3 downto 0) := "0000";
     signal instr     : std_logic_vector(31 downto 0) := (others => '0');
     signal result    : std_logic_vector(31 downto 0);
     signal zero      : std_logic;
     signal pc        : std_logic_vector(31 downto 0);
-    signal result_src : std_logic := '0';
+    signal result_src : std_logic_vector(1 downto 0) := "00";
     signal read_data  : std_logic_vector(31 downto 0) := (others => '0');
     signal write_data : std_logic_vector(31 downto 0);
     signal done      : boolean := false;
@@ -34,12 +34,12 @@ architecture sim of tb_datapath is
     type ops_t is array (0 to 9) of std_logic_vector(3 downto 0);
     constant OPS : ops_t := ("0000", "1000", "0001", "0010", "0011", "0100", "0101", "1101", "0110", "0111");
 
-    function ref_imm(i : std_logic_vector(31 downto 0); src : std_logic_vector(1 downto 0)) return std_logic_vector is
+    function ref_imm(i : std_logic_vector(31 downto 0); src : std_logic_vector(2 downto 0)) return std_logic_vector is
     begin
         case src is
-            when "00"   => return (31 downto 12 => i(31)) & i(31 downto 20);
-            when "01"   => return (31 downto 12 => i(31)) & i(31 downto 25) & i(11 downto 7);
-            when "10"   => return (31 downto 12 => i(31)) & i(7) & i(30 downto 25) & i(11 downto 8) & '0';
+            when "000"  => return (31 downto 12 => i(31)) & i(31 downto 20);
+            when "001"  => return (31 downto 12 => i(31)) & i(31 downto 25) & i(11 downto 7);
+            when "010"  => return (31 downto 12 => i(31)) & i(7) & i(30 downto 25) & i(11 downto 8) & '0';
             when others => return x"00000000";
         end case;
     end function;
@@ -95,11 +95,11 @@ begin
         variable n_zero   : natural := 0;
         variable v_instr  : std_logic_vector(31 downto 0);
         variable v_op     : std_logic_vector(3 downto 0);
-        variable v_isrc   : std_logic_vector(1 downto 0);
+        variable v_isrc   : std_logic_vector(2 downto 0);
         variable v_asrc   : std_logic;
         variable v_we     : std_logic;
         variable v_psrc   : std_logic;
-        variable v_rsrc   : std_logic := '0';
+        variable v_rsrc   : std_logic_vector(1 downto 0) := "00";
         variable v_rdata  : std_logic_vector(31 downto 0) := (others => '0');
         variable imm      : std_logic_vector(31 downto 0);
         variable a, b     : std_logic_vector(31 downto 0);
@@ -178,11 +178,12 @@ begin
             wait until rising_edge(clk);
 
             if v_we = '1' and rd /= 0 then
-                if v_rsrc = '1' then
-                    regs(rd) := v_rdata;
-                else
-                    regs(rd) := exp;
-                end if;
+                case v_rsrc is
+                    when "00"   => regs(rd) := exp;
+                    when "01"   => regs(rd) := v_rdata;
+                    when "10"   => regs(rd) := std_logic_vector(m_pc + 4);
+                    when others => regs(rd) := imm;
+                end case;
             end if;
             if v_psrc = '1' then
                 m_pc := m_pc + unsigned(imm);
@@ -209,7 +210,7 @@ begin
             v_instr(19 downto 15) := "00000";
             v_instr(11 downto 7)  := std_logic_vector(to_unsigned(i, 5));
             v_op   := "0000";
-            v_isrc := "00";
+            v_isrc := "000";
             v_asrc := '1';
             v_we   := '1';
             v_psrc := '0';
@@ -220,7 +221,7 @@ begin
             v_instr := rnd_word;
             v_instr(11 downto 7) := "00000";
             v_op   := "0000";
-            v_isrc := "00";
+            v_isrc := "000";
             v_asrc := '0';
             v_we   := '1';
             v_psrc := '0';
@@ -230,31 +231,31 @@ begin
         v_instr := x"00000000";
         v_instr(19 downto 15) := "00000";
         v_instr(24 downto 20) := "00000";
-        v_op := "0000"; v_isrc := "00"; v_asrc := '0'; v_we := '0'; v_psrc := '0';
+        v_op := "0000"; v_isrc := "000"; v_asrc := '0'; v_we := '0'; v_psrc := '0';
         step;
 
         for i in 1 to 31 loop
             v_instr := rnd_word;
             v_instr(11 downto 7) := std_logic_vector(to_unsigned(i, 5));
             v_op   := "0000";
-            v_isrc := "00";
+            v_isrc := "000";
             v_asrc := '1';
             v_we   := '1';
             v_psrc := '0';
-            v_rsrc := '1';
+            v_rsrc := "01";
             v_rdata := rnd_word;
             step;
         end loop;
-        v_rsrc := '0';
+        v_rsrc := "00";
 
         for i in 1 to N_RANDOM loop
             v_instr := rnd_word;
             v_op    := OPS(rnd(10));
-            v_isrc  := std_logic_vector(to_unsigned(2 * rnd(2), 2));
+            v_isrc  := std_logic_vector(to_unsigned(rnd(3), 3));
             v_asrc  := rnd_bit;
             v_we    := rnd_bit;
             v_psrc  := rnd_bit;
-            v_rsrc  := rnd_bit;
+            v_rsrc  := std_logic_vector(to_unsigned(rnd(4), 2));
             v_rdata := rnd_word;
             if rnd(4) = 0 then
                 v_instr(24 downto 20) := v_instr(19 downto 15);

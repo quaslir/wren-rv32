@@ -9,10 +9,10 @@ entity control_unit is
         alu_op    : out std_logic_vector(3 downto 0);
         alu_src   : out std_logic;
         illegal   : out std_logic;
-        imm_src   : out std_logic_vector(1 downto 0);
+        imm_src   : out std_logic_vector(2 downto 0);
         branch    : out std_logic;
         mem_write: out std_logic;
-        result_src: out std_logic
+        result_src: out std_logic_vector(1 downto 0)
     );
 end entity control_unit;
 
@@ -29,10 +29,10 @@ begin
         alu_src   <= '0';
         alu_op    <= "0000";
         illegal   <= '0';
-        imm_src   <= "00";
+        imm_src   <= "000";
         branch    <= '0';
         mem_write <= '0';
-        result_src <= '0';
+        result_src <= "00";
         case opcode is
             when "0110011" =>
                 if funct7 = "0000000" then
@@ -52,14 +52,14 @@ begin
              "010" | "011" | "100" | "110"
             | "111" =>
                         alu_op    <= '0' & funct3;
-                        imm_src   <= "00";
+                        imm_src   <= "000";
                         reg_write <= '1';
                         alu_src   <= '1';
 
                     when "001" =>
                         if funct7 = "0000000" then
                             alu_op    <= '0' & funct3;
-                            imm_src   <= "00";
+                            imm_src   <= "000";
                             reg_write <= '1';
                             alu_src   <= '1';
 
@@ -68,7 +68,7 @@ begin
                         end if;
                     when "101" =>
                         if funct7 = "0000000" or funct7 = "0100000" then
-                            imm_src   <= "00";
+                            imm_src   <= "000";
                             reg_write <= '1';
                             alu_src   <= '1';
                             alu_op    <= instr(30) & funct3;
@@ -83,15 +83,15 @@ begin
 
                 case funct3 is
                     when "000" | "001" => 
-                    imm_src <= "10";
+                    imm_src <= "010";
                     branch  <= '1';
                     alu_op  <= "1000";
                     when "100" | "101" => 
-                    imm_src <= "10";
+                    imm_src <= "010";
                     branch <= '1';
                     alu_op <= "0010";
                     when "110" | "111" => 
-                    imm_src <= "10";
+                    imm_src <= "010";
                     branch <= '1';
                     alu_op <= "0011";
                     when others => illegal <= '1';
@@ -101,14 +101,14 @@ begin
                     when "010" => 
                         reg_write <= '1';
                         alu_src <= '1';
-                        imm_src <= "00";
-                        result_src <= '1';
+                        imm_src <= "000";
+                        result_src <= "01";
                     when others => illegal <= '1';
                 end case;
             when "0100011" =>
                 case funct3 is
                     when "010" =>
-                    imm_src <= "01";
+                    imm_src <= "001";
                     alu_src <= '1';
                     mem_write <='1';
 

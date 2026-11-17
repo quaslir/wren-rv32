@@ -8,7 +8,7 @@ end entity tb_extend;
 
 architecture sim of tb_extend is
     signal instr   : std_logic_vector(31 downto 0) := (others => '0');
-    signal imm_src : std_logic_vector(1 downto 0) := "00";
+    signal imm_src : std_logic_vector(2 downto 0) := "000";
     signal imm_ext : std_logic_vector(31 downto 0);
 
     function enc_i(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
@@ -16,6 +16,15 @@ architecture sim of tb_extend is
         variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
     begin
         v(31 downto 20) := u;
+        return v;
+    end function;
+
+    function enc_s(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
+        variable v : std_logic_vector(31 downto 0) := other;
+        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
+    begin
+        v(31 downto 25) := u(11 downto 5);
+        v(11 downto 7)  := u(4 downto 0);
         return v;
     end function;
 
@@ -59,7 +68,7 @@ begin
             return w;
         end function;
 
-        procedure check(name : string; i : std_logic_vector(31 downto 0); src : std_logic_vector(1 downto 0); expected : integer) is
+        procedure check(name : string; i : std_logic_vector(31 downto 0); src : std_logic_vector(2 downto 0); expected : integer) is
             variable exp : std_logic_vector(31 downto 0) := std_logic_vector(to_signed(expected, 32));
         begin
             instr   <= i;
@@ -76,31 +85,42 @@ begin
             end if;
         end procedure;
     begin
-        check("I addi 5",       x"00500093", "00", 5);
-        check("I addi -1",      x"FFF00393", "00", -1);
-        check("I max",          x"7FF00093", "00", 2047);
-        check("I min",          x"80000093", "00", -2048);
-        check("B beq +8",       x"00208463", "10", 8);
-        check("B beq -8",       x"FE000CE3", "10", -8);
-        check("B beq +4094",    x"7E000FE3", "10", 4094);
-        check("B beq -4096",    x"80000063", "10", -4096);
+        check("I addi 5",       x"00500093", "000", 5);
+        check("I addi -1",      x"FFF00393", "000", -1);
+        check("I max",          x"7FF00093", "000", 2047);
+        check("I min",          x"80000093", "000", -2048);
+        check("S sw 0",         x"00112023", "001", 0);
+        check("S sw -4",        x"FE112E23", "001", -4);
+        check("B beq +8",       x"00208463", "010", 8);
+        check("B beq -8",       x"FE000CE3", "010", -8);
+        check("B beq +4094",    x"7E000FE3", "010", 4094);
+        check("B beq -4096",    x"80000063", "010", -4096);
 
         for imm in -2048 to 2047 loop
-            check("I all zero",  enc_i(imm, x"00000000"), "00", imm);
-            check("I all ones",  enc_i(imm, x"FFFFFFFF"), "00", imm);
+            check("I all zero",  enc_i(imm, x"00000000"), "000", imm);
+            check("I all ones",  enc_i(imm, x"FFFFFFFF"), "000", imm);
             other := rand_word;
-            check("I random",    enc_i(imm, other), "00", imm);
+            check("I random",    enc_i(imm, other), "000", imm);
+        end loop;
+
+        for imm in -2048 to 2047 loop
+            check("S all zero",  enc_s(imm, x"00000000"), "001", imm);
+            check("S all ones",  enc_s(imm, x"FFFFFFFF"), "001", imm);
+            other := rand_word;
+            check("S random",    enc_s(imm, other), "001", imm);
         end loop;
 
         for k in -2048 to 2047 loop
-            check("B all zero",  enc_b(2 * k, x"00000000"), "10", 2 * k);
-            check("B all ones",  enc_b(2 * k, x"FFFFFFFF"), "10", 2 * k);
+            check("B all zero",  enc_b(2 * k, x"00000000"), "010", 2 * k);
+            check("B all ones",  enc_b(2 * k, x"FFFFFFFF"), "010", 2 * k);
             other := rand_word;
-            check("B random",    enc_b(2 * k, other), "10", 2 * k);
+            check("B random",    enc_b(2 * k, other), "010", 2 * k);
         end loop;
 
-        for n in 1 to 200 loop
-            check("src 11",      rand_word, "11", 0);
+        for n in 1 to 100 loop
+            check("src 101",     rand_word, "101", 0);
+            check("src 110",     rand_word, "110", 0);
+            check("src 111",     rand_word, "111", 0);
         end loop;
 
         if err = 0 then

@@ -9,9 +9,9 @@ entity controller is
        zero: in std_logic;
        reg_write, alu_src, illegal, pc_src: out std_logic;
        alu_op: out std_logic_vector(3 downto 0);
-       imm_src: out std_logic_vector(1 downto 0);
+       imm_src: out std_logic_vector(2 downto 0);
        mem_write: out std_logic;
-       result_src: out std_logic
+       result_src: out std_logic_vector(1 downto 0)
     );
 end entity controller;
 

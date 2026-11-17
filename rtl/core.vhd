@@ -20,9 +20,9 @@ architecture synth of core is
     signal reg_write : std_logic      := '0';              
     signal alu_op    : std_logic_vector(3 downto 0);
     signal alu_src   : std_logic         :='0';         
-    signal imm_src   : std_logic_vector(1 downto 0) := (others => '0');
+    signal imm_src   : std_logic_vector(2 downto 0) := (others => '0');
     signal pc_src    : std_logic  := '0';              
-    signal result_src: std_logic := '0';
+    signal result_src: std_logic_vector(1 downto 0) := (others => '0');
     signal zero : std_logic := '0';
 
 begin
