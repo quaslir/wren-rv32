@@ -25,8 +25,8 @@ begin
         (others => '0');
     
     is_sb <= '1' when size = "00" else '0';
-    is_sh <= '1' when size = "01" else '0';
-    is_sw <= '1' when size = "10" else '0';
+    is_sh <= '1' when size = "01" and addr_lo(0) = '0' else '0';
+    is_sw <= '1' when size = "10"and addr_lo = "00" else '0';
 
     be(0) <= '1' when is_sw = '1' or (is_sb = '1' and addr_lo = "00") or (is_sh = '1' and addr_lo(1) = '0') else '0';
     be(1) <= '1' when is_sw = '1' or (is_sb = '1' and addr_lo = "01") or (is_sh = '1' and addr_lo(1) = '0') else '0';

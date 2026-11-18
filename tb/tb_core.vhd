@@ -24,6 +24,7 @@ architecture sim of tb_core is
     signal read_data  : std_logic_vector(31 downto 0);
     signal mem_write  : std_logic;
     signal write_data : std_logic_vector(31 downto 0);
+    signal be         : std_logic_vector(3 downto 0);
     signal done       : boolean := false;
 
     type regs_t is array (0 to 31) of std_logic_vector(31 downto 0);
@@ -107,7 +108,8 @@ begin
             pc         => pc,
             read_data  => read_data,
             mem_write  => mem_write,
-            write_data => write_data
+            write_data => write_data,
+            be         => be
         );
 
     read_data <= dmem(word_of(alu_result)) when word_of(alu_result) < MEM_DEPTH else (others => '0');
@@ -121,7 +123,8 @@ begin
         variable m_pc        : unsigned(31 downto 0) := (others => '0');
         variable err         : natural := 0;
         variable cnt         : natural := 0;
-        variable n_r, n_i, n_b, n_taken, n_ill, n_lw, n_sw : natural := 0;
+        variable n_r, n_i, n_b, n_taken, n_ill, n_lw, n_sw, n_sw_mis : natural := 0;
+        variable aligned     : boolean;
         variable mem         : mem_t := (others => (others => '0'));
         variable loads       : boolean;
         variable stores      : boolean;
@@ -260,8 +263,22 @@ begin
                     fail("alu_result got=0x" & to_hstring(alu_result) & " expected=0x" & to_hstring(exp));
                 end if;
                 if stores then
-                    if write_data /= regs(rs2) then
-                        fail("sw write_data got=0x" & to_hstring(write_data) & " expected=0x" & to_hstring(regs(rs2)));
+                    aligned := exp(1 downto 0) = "00";
+                    if aligned then
+                        if be /= "1111" then
+                            fail("sw be got=" & to_string(be) & " expected=1111");
+                        end if;
+                        if write_data /= regs(rs2) then
+                            fail("sw write_data got=0x" & to_hstring(write_data) & " expected=0x" & to_hstring(regs(rs2)));
+                        end if;
+                    else
+                        n_sw_mis := n_sw_mis + 1;
+                        if be /= "0000" then
+                            fail("misaligned sw be got=" & to_string(be) & " expected=0000");
+                        end if;
+                        if is_x(write_data) then
+                            fail("misaligned sw write_data undefined: 0x" & to_hstring(write_data));
+                        end if;
                     end if;
                 end if;
             else
@@ -285,7 +302,7 @@ begin
                     regs(rd) := exp;
                 end if;
             end if;
-            if stores and word_of(exp) < MEM_DEPTH then
+            if stores and exp(1 downto 0) = "00" and word_of(exp) < MEM_DEPTH then
                 mem(word_of(exp)) := regs(rs2);
                 dmem <= mem;
             end if;
@@ -432,7 +449,7 @@ begin
 
         report "cycles " & integer'image(cnt) & ": R " & integer'image(n_r) & ", I " & integer'image(n_i)
             & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), lw " & integer'image(n_lw)
-            & ", sw " & integer'image(n_sw) & ", illegal " & integer'image(n_ill) severity note;
+            & ", sw " & integer'image(n_sw) & " (misaligned " & integer'image(n_sw_mis) & "), illegal " & integer'image(n_ill) severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else

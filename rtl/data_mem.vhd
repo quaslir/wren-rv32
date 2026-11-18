@@ -12,6 +12,7 @@ entity data_mem is
         addr: in std_logic_vector(31 downto 0);
         wd: in std_logic_vector(31 downto 0);
         rd : out std_logic_vector(31 downto 0)
+
     );
 end entity data_mem;
 

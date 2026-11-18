@@ -32,13 +32,15 @@ architecture sim of tb_store_align is
             when "00" =>
                 r(i) := '1';
             when "01" =>
-                if a(1) = '0' then
+                if a = "00" then
                     r := "0011";
-                else
+                elsif a = "10" then
                     r := "1100";
                 end if;
             when "10" =>
-                r := "1111";
+                if a = "00" then
+                    r := "1111";
+                end if;
             when others =>
                 r := "0000";
         end case;
@@ -91,15 +93,15 @@ begin
                        " wd=0x" & to_hstring(d) & " got=" & to_string(be) &
                        " expected=" & to_string(exp_be) severity error;
             end if;
-            if s /= "11" and wd_out /= exp_wd then
+            if exp_be /= "0000" and wd_out /= exp_wd then
                 errors := errors + 1;
                 report "wd_out mismatch: size=" & to_string(s) & " addr_lo=" & to_string(a) &
                        " wd=0x" & to_hstring(d) & " got=0x" & to_hstring(wd_out) &
                        " expected=0x" & to_hstring(exp_wd) severity error;
             end if;
-            if s = "11" and is_x(wd_out) then
+            if exp_be = "0000" and is_x(wd_out) then
                 errors := errors + 1;
-                report "wd_out undefined for size=11: addr_lo=" & to_string(a) &
+                report "wd_out undefined: size=" & to_string(s) & " addr_lo=" & to_string(a) &
                        " got=0x" & to_hstring(wd_out) severity error;
             end if;
         end procedure;
@@ -124,19 +126,35 @@ begin
                        severity error;
             end if;
         end procedure;
+        procedure check_be(s : std_logic_vector(1 downto 0);
+                           a : std_logic_vector(1 downto 0);
+                           exp_be : std_logic_vector(3 downto 0)) is
+        begin
+            size    <= s;
+            addr_lo <= a;
+            wd      <= x"123456AB";
+            wait for 1 ns;
+            checks := checks + 1;
+            if be /= exp_be then
+                errors := errors + 1;
+                report "misaligned: size=" & to_string(s) & " addr_lo=" & to_string(a) &
+                       " got be=" & to_string(be) & " expected=" & to_string(exp_be)
+                       severity error;
+            end if;
+        end procedure;
     begin
         check_case("00", "00", x"123456AB", "0001", x"ABABABAB");
         check_case("00", "01", x"123456AB", "0010", x"ABABABAB");
         check_case("00", "10", x"123456AB", "0100", x"ABABABAB");
         check_case("00", "11", x"123456AB", "1000", x"ABABABAB");
         check_case("01", "00", x"123456AB", "0011", x"56AB56AB");
-        check_case("01", "01", x"123456AB", "0011", x"56AB56AB");
+        check_be("01", "01", "0000");
+        check_be("01", "11", "0000");
+        check_be("10", "01", "0000");
+        check_be("10", "10", "0000");
+        check_be("10", "11", "0000");
         check_case("01", "10", x"123456AB", "1100", x"56AB56AB");
-        check_case("01", "11", x"123456AB", "1100", x"56AB56AB");
         check_case("10", "00", x"123456AB", "1111", x"123456AB");
-        check_case("10", "01", x"123456AB", "1111", x"123456AB");
-        check_case("10", "10", x"123456AB", "1111", x"123456AB");
-        check_case("10", "11", x"123456AB", "1111", x"123456AB");
 
         for s in 0 to 3 loop
             for a in 0 to 3 loop

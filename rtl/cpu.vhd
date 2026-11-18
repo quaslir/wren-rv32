@@ -19,7 +19,7 @@ architecture synth of cpu is
     signal mem_write: std_logic := '0';
     signal write_data: std_logic_vector(31 downto 0) := (others => '0');
     signal read_data: std_logic_vector(31 downto 0) := (others => '0');
- 
+    signal be : std_logic_vector(3 downto 0) := (others => '0');
 begin
 
 
@@ -34,7 +34,8 @@ core_inst : entity work.core
         alu_result => alu_result,
         pc         => pc,
         mem_write  => mem_write,
-        write_data => write_data
+        write_data => write_data,
+        be => be
     );
 
     instr_mem_inst : entity work.instr_mem
