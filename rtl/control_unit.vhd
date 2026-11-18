@@ -1,6 +1,5 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 
 entity control_unit is
     port(
@@ -12,7 +11,8 @@ entity control_unit is
         imm_src   : out std_logic_vector(2 downto 0);
         branch    : out std_logic;
         mem_write: out std_logic;
-        result_src: out std_logic_vector(1 downto 0)
+        result_src: out std_logic_vector(1 downto 0);
+        mem_access: out std_logic
     );
 end entity control_unit;
 
@@ -23,7 +23,7 @@ architecture synth of control_unit is
 
 begin
 
-    process(opcode, funct3, funct7)
+    process(all)
     begin
         reg_write <= '0';
         alu_src   <= '0';
@@ -33,11 +33,11 @@ begin
         branch    <= '0';
         mem_write <= '0';
         result_src <= "00";
+        mem_access <= '0';
         case opcode is
             when "0110011" =>
                 if funct7 = "0000000" then
                     reg_write <= '1';
-                    alu_src   <= '0';
                     alu_op    <= funct7(5) & funct3;
                 elsif funct7 = "0100000" and (funct3 = "000" or funct3 = "101") then
                     reg_write <= '1';
@@ -98,19 +98,24 @@ begin
                 end case;
             when "0000011" =>
                 case funct3 is
-                    when "010" => 
+                        when "000" | "001" | "010" |
+                         "100" | "101" => 
                         reg_write <= '1';
                         alu_src <= '1';
                         imm_src <= "000";
                         result_src <= "01";
+                        alu_op <= "0000";
+                        mem_access <= '1';
                     when others => illegal <= '1';
                 end case;
             when "0100011" =>
                 case funct3 is
-                    when "010" =>
+                    when "000" | "001" | "010" =>
                     imm_src <= "001";
                     alu_src <= '1';
                     mem_write <='1';
+                    alu_op <= "0000";
+                    mem_access <='1';
                     when others => illegal <= '1';
                 end case;
                 

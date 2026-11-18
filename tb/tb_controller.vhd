@@ -1,127 +1,278 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity tb_controller is
+    generic(
+        SEED1 : positive := 17;
+        SEED2 : positive := 43
+    );
 end entity tb_controller;
 
 architecture sim of tb_controller is
-    signal instr     : std_logic_vector(31 downto 0) := (others => '0');
-    signal zero      : std_logic := '0';
-    signal reg_write : std_logic;
-    signal alu_src   : std_logic;
-    signal illegal   : std_logic;
-    signal pc_src    : std_logic;
-    signal alu_op    : std_logic_vector(3 downto 0);
-    signal imm_src   : std_logic_vector(2 downto 0);
-    signal mem_write : std_logic;
+    signal instr      : std_logic_vector(31 downto 0) := (others => '0');
+    signal zero       : std_logic := '0';
+    signal reg_write  : std_logic;
+    signal alu_src    : std_logic;
+    signal illegal    : std_logic;
+    signal pc_src     : std_logic;
+    signal alu_op     : std_logic_vector(3 downto 0);
+    signal imm_src    : std_logic_vector(2 downto 0);
+    signal mem_write  : std_logic;
     signal result_src : std_logic_vector(1 downto 0);
 
-    signal ref_reg_write : std_logic;
-    signal ref_alu_src   : std_logic;
-    signal ref_illegal   : std_logic;
-    signal ref_branch    : std_logic;
-    signal ref_alu_op    : std_logic_vector(3 downto 0);
-    signal ref_imm_src   : std_logic_vector(2 downto 0);
-    signal ref_mem_write : std_logic;
-    signal ref_result_src : std_logic_vector(1 downto 0);
+    constant OP_R : std_logic_vector(6 downto 0) := "0110011";
+    constant OP_I : std_logic_vector(6 downto 0) := "0010011";
+    constant OP_B : std_logic_vector(6 downto 0) := "1100011";
+    constant OP_L : std_logic_vector(6 downto 0) := "0000011";
+    constant OP_S : std_logic_vector(6 downto 0) := "0100011";
 
-    type instr_array_t is array (natural range <>) of std_logic_vector(31 downto 0);
-    type name_array_t is array (natural range <>) of string(1 to 12);
+    type ctrl_t is record
+        reg_write   : std_logic;
+        alu_src     : std_logic;
+        illegal     : std_logic;
+        branch      : std_logic;
+        mem_write   : std_logic;
+        mem_access  : std_logic;
+        alu_op      : std_logic_vector(3 downto 0);
+        imm_src     : std_logic_vector(2 downto 0);
+        result_src  : std_logic_vector(1 downto 0);
+        c_alu_src   : boolean;
+        c_alu_op    : boolean;
+        c_imm_src   : boolean;
+        c_result    : boolean;
+    end record;
 
-    constant INSTRS : instr_array_t := (
-        x"002081B3", x"40208233", x"0020F2B3", x"00500093", x"FFF00393",
-        x"00504093", x"40315093", x"00208463", x"FE000CE3", x"00418C63",
-        x"00209463", x"02208233", x"00002083", x"00112023", x"008000EF",
-        x"00000000", x"FFFFFFFF", x"40311093",
-        x"0020C463", x"0020D463", x"0020E463", x"0020F463", x"0020A463", x"0020B463",
-        x"00412083", x"00112223", x"00410083", x"00111223"
+    constant ILLEGAL_CTRL : ctrl_t := (
+        reg_write => '0', alu_src => '-', illegal => '1', branch => '0',
+        mem_write => '0', mem_access => '0', alu_op => "----", imm_src => "---",
+        result_src => "--", c_alu_src => false, c_alu_op => false,
+        c_imm_src => false, c_result => false
     );
-    constant NAMES : name_array_t := (
-        "add         ", "sub         ", "and         ", "addi 5      ", "addi -1     ",
-        "xori        ", "srai        ", "beq +8      ", "beq -8      ", "beq +24     ",
-        "bne         ", "mul         ", "lw          ", "sw          ", "jal         ",
-        "zero        ", "ones        ", "slli bad f7 ",
-        "blt         ", "bge         ", "bltu        ", "bgeu        ", "b funct3 010", "b funct3 011",
-        "lw          ", "sw          ", "lb          ", "sh          "
-    );
+
+    function ref_ctrl(v : std_logic_vector(31 downto 0)) return ctrl_t is
+        variable op : std_logic_vector(6 downto 0) := v(6 downto 0);
+        variable f3 : std_logic_vector(2 downto 0) := v(14 downto 12);
+        variable f7 : std_logic_vector(6 downto 0) := v(31 downto 25);
+        variable c  : ctrl_t := ILLEGAL_CTRL;
+    begin
+        if op = OP_R then
+            if f7 = "0000000" or (f7 = "0100000" and (f3 = "000" or f3 = "101")) then
+                c := ('1', '0', '0', '0', '0', '0', f7(5) & f3, "---", "00", true, true, false, true);
+            end if;
+        elsif op = OP_I then
+            if f3 = "001" then
+                if f7 = "0000000" then
+                    c := ('1', '1', '0', '0', '0', '0', "0001", "000", "00", true, true, true, true);
+                end if;
+            elsif f3 = "101" then
+                if f7 = "0000000" then
+                    c := ('1', '1', '0', '0', '0', '0', "0101", "000", "00", true, true, true, true);
+                elsif f7 = "0100000" then
+                    c := ('1', '1', '0', '0', '0', '0', "1101", "000", "00", true, true, true, true);
+                end if;
+            else
+                c := ('1', '1', '0', '0', '0', '0', '0' & f3, "000", "00", true, true, true, true);
+            end if;
+        elsif op = OP_B then
+            case f3 is
+                when "000" | "001" =>
+                    c := ('0', '0', '0', '1', '0', '0', "1000", "010", "--", true, true, true, false);
+                when "100" | "101" =>
+                    c := ('0', '0', '0', '1', '0', '0', "0010", "010", "--", true, true, true, false);
+                when "110" | "111" =>
+                    c := ('0', '0', '0', '1', '0', '0', "0011", "010", "--", true, true, true, false);
+                when others =>
+                    null;
+            end case;
+        elsif op = OP_L then
+            case f3 is
+                when "000" | "001" | "010" | "100" | "101" =>
+                    c := ('1', '1', '0', '0', '0', '1', "0000", "000", "01", true, true, true, true);
+                when others =>
+                    null;
+            end case;
+        elsif op = OP_S then
+            case f3 is
+                when "000" | "001" | "010" =>
+                    c := ('0', '1', '0', '0', '1', '1', "0000", "001", "--", true, true, true, false);
+                when others =>
+                    null;
+            end case;
+        end if;
+        return c;
+    end function;
+
+    function ref_taken(v : std_logic_vector(31 downto 0); z : std_logic) return std_logic is
+        variable f3 : std_logic_vector(2 downto 0) := v(14 downto 12);
+    begin
+        if ref_ctrl(v).branch /= '1' then
+            return '0';
+        end if;
+        case f3 is
+            when "000"  => return z;
+            when "001"  => return not z;
+            when "100"  => return not z;
+            when "101"  => return z;
+            when "110"  => return not z;
+            when "111"  => return z;
+            when others => return '0';
+        end case;
+    end function;
+
+    function std_match_v(got, exp : std_logic_vector) return boolean is
+    begin
+        for i in got'range loop
+            if exp(i) /= '-' and got(i) /= exp(i) then
+                return false;
+            end if;
+        end loop;
+        return true;
+    end function;
 begin
     dut : entity work.controller
         port map(
-            instr     => instr,
-            zero      => zero,
-            reg_write => reg_write,
-            alu_src   => alu_src,
-            illegal   => illegal,
-            pc_src    => pc_src,
-            alu_op    => alu_op,
-            imm_src   => imm_src,
-            mem_write => mem_write,
+            instr      => instr,
+            zero       => zero,
+            reg_write  => reg_write,
+            alu_src    => alu_src,
+            illegal    => illegal,
+            pc_src     => pc_src,
+            alu_op     => alu_op,
+            imm_src    => imm_src,
+            mem_write  => mem_write,
             result_src => result_src
         );
 
-    ref : entity work.control_unit
-        port map(
-            instr     => instr,
-            reg_write => ref_reg_write,
-            alu_op    => ref_alu_op,
-            alu_src   => ref_alu_src,
-            illegal   => ref_illegal,
-            imm_src   => ref_imm_src,
-            branch    => ref_branch,
-            mem_write => ref_mem_write,
-            result_src => ref_result_src
-        );
-
     stim : process
-        variable err      : natural := 0;
-        variable cnt      : natural := 0;
-        variable exp_src  : std_logic;
-        variable is_branch : boolean;
-        variable f3       : std_logic_vector(2 downto 0);
-        variable z        : std_logic;
+        variable errors  : natural := 0;
+        variable checks  : natural := 0;
+        variable n_taken : natural := 0;
+        variable n_br    : natural := 0;
+        variable s1      : positive := SEED1;
+        variable s2      : positive := SEED2;
+        variable r       : real;
+        variable v       : std_logic_vector(31 downto 0);
+        variable c       : ctrl_t;
+        variable t       : std_logic;
+
+        impure function rnd5 return std_logic_vector is
+        begin
+            uniform(s1, s2, r);
+            return std_logic_vector(to_unsigned(integer(trunc(r * 32.0)) mod 32, 5));
+        end function;
+
+        procedure fail(msg : string) is
+        begin
+            errors := errors + 1;
+            if errors <= 30 then
+                report "instr=0x" & to_hstring(instr) & " zero=" & std_logic'image(zero) & ": " & msg severity error;
+            end if;
+        end procedure;
+
+        procedure chk1(name : string; got, exp : std_logic) is
+        begin
+            checks := checks + 1;
+            if exp /= '-' and got /= exp then
+                fail(name & " got=" & std_logic'image(got) & " expected=" & std_logic'image(exp));
+            end if;
+        end procedure;
+
+        procedure chkv(name : string; got, exp : std_logic_vector) is
+        begin
+            checks := checks + 1;
+            if not std_match_v(got, exp) then
+                fail(name & " got=" & to_string(got) & " expected=" & to_string(exp));
+            end if;
+        end procedure;
+
+        procedure check_all is
+        begin
+            c := ref_ctrl(instr);
+            t := ref_taken(instr, zero);
+            chk1("pc_src", pc_src, t);
+            chk1("reg_write", reg_write, c.reg_write);
+            chk1("illegal", illegal, c.illegal);
+            chk1("mem_write", mem_write, c.mem_write);
+            if c.c_alu_src then
+                chk1("alu_src", alu_src, c.alu_src);
+            end if;
+            if c.c_alu_op then
+                chkv("alu_op", alu_op, c.alu_op);
+            end if;
+            if c.c_imm_src then
+                chkv("imm_src", imm_src, c.imm_src);
+            end if;
+            if c.c_result then
+                chkv("result_src", result_src, c.result_src);
+            end if;
+            checks := checks + 1;
+            if is_x(reg_write & alu_src & illegal & pc_src & alu_op & imm_src & mem_write & result_src) then
+                fail("undefined output");
+            end if;
+            if c.branch = '1' then
+                n_br := n_br + 1;
+                if t = '1' then
+                    n_taken := n_taken + 1;
+                end if;
+            end if;
+        end procedure;
+
+        type br_t is record
+            f3 : std_logic_vector(2 downto 0);
+            z0 : std_logic;
+            z1 : std_logic;
+        end record;
+        type br_arr_t is array (natural range <>) of br_t;
+        constant BR_TABLE : br_arr_t := (
+            ("000", '0', '1'),
+            ("001", '1', '0'),
+            ("100", '1', '0'),
+            ("101", '0', '1'),
+            ("110", '1', '0'),
+            ("111", '0', '1'),
+            ("010", '0', '0'),
+            ("011", '0', '0')
+        );
     begin
-        for i in INSTRS'range loop
-            for zi in 0 to 1 loop
-                if zi = 0 then
-                    z := '0';
+        for k in BR_TABLE'range loop
+            for z in 0 to 1 loop
+                instr <= "0000000" & "00011" & "00010" & BR_TABLE(k).f3 & "01000" & OP_B;
+                if z = 0 then
+                    zero <= '0';
                 else
-                    z := '1';
+                    zero <= '1';
                 end if;
-                instr <= INSTRS(i);
-                zero  <= z;
-                wait for 10 ns;
-                cnt := cnt + 1;
-
-                f3 := INSTRS(i)(14 downto 12);
-                is_branch := INSTRS(i)(6 downto 0) = "1100011" and f3 /= "010" and f3 /= "011";
-                if is_branch and ((f3 = "000" or f3 = "101" or f3 = "111") = (z = '1')) then
-                    exp_src := '1';
-                else
-                    exp_src := '0';
-                end if;
-
-                if pc_src /= exp_src then
-                    report "FAIL " & NAMES(i) & " zero=" & std_logic'image(z)
-                        & " pc_src=" & std_logic'image(pc_src) & " expected=" & std_logic'image(exp_src) severity error;
-                    err := err + 1;
-                end if;
-
-                if reg_write /= ref_reg_write or alu_src /= ref_alu_src or illegal /= ref_illegal
-                   or alu_op /= ref_alu_op or imm_src /= ref_imm_src
-                   or mem_write /= ref_mem_write or result_src /= ref_result_src then
-                    report "FAIL " & NAMES(i) & " zero=" & std_logic'image(z)
-                        & " outputs differ from control_unit" severity error;
-                    err := err + 1;
+                wait for 1 ns;
+                checks := checks + 1;
+                if (z = 0 and pc_src /= BR_TABLE(k).z0) or (z = 1 and pc_src /= BR_TABLE(k).z1) then
+                    fail("branch table f3=" & to_string(BR_TABLE(k).f3) & " pc_src=" & std_logic'image(pc_src));
                 end if;
             end loop;
         end loop;
 
-        if err = 0 then
-            report "tb_controller: ALL " & integer'image(cnt) & " TESTS PASSED" severity note;
-        else
-            report "tb_controller: " & integer'image(err) & " FAILURES" severity failure;
-        end if;
+        for op in 0 to 127 loop
+            for f3 in 0 to 7 loop
+                for f7 in 0 to 127 loop
+                    v := std_logic_vector(to_unsigned(f7, 7)) & rnd5 & rnd5 &
+                         std_logic_vector(to_unsigned(f3, 3)) & rnd5 &
+                         std_logic_vector(to_unsigned(op, 7));
+                    instr <= v;
+                    zero  <= '0';
+                    wait for 1 ns;
+                    check_all;
+                    zero <= '1';
+                    wait for 1 ns;
+                    check_all;
+                end loop;
+            end loop;
+        end loop;
+
+        report "tb_controller: " & integer'image(checks) & " checks, " & integer'image(n_br) &
+               " branch vectors (" & integer'image(n_taken) & " taken), " & integer'image(errors) & " errors";
+        assert errors = 0 report "tb_controller FAILED" severity failure;
+        report "tb_controller PASSED";
         std.env.finish;
     end process;
 end architecture sim;

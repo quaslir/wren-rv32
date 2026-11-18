@@ -28,6 +28,7 @@ architecture sim of tb_core is
     signal done       : boolean := false;
 
     type regs_t is array (0 to 31) of std_logic_vector(31 downto 0);
+    type cnt8_t is array (0 to 7) of natural;
     type mem_t is array (0 to MEM_DEPTH - 1) of std_logic_vector(31 downto 0);
     signal dmem : mem_t := (others => (others => '0'));
 
@@ -63,6 +64,58 @@ architecture sim of tb_core is
             when "0110" => return a or b;
             when "0111" => return a and b;
             when others => return x"00000000";
+        end case;
+    end function;
+
+    function ref_load(f : std_logic_vector(2 downto 0); a : std_logic_vector(1 downto 0);
+                      w : std_logic_vector(31 downto 0)) return std_logic_vector is
+        variable b : std_logic_vector(7 downto 0);
+        variable h : std_logic_vector(15 downto 0);
+        variable i : natural := to_integer(unsigned(a));
+    begin
+        b := w(8 * i + 7 downto 8 * i);
+        if a(1) = '0' then
+            h := w(15 downto 0);
+        else
+            h := w(31 downto 16);
+        end if;
+        case f is
+            when "000"  => return std_logic_vector(resize(signed(b), 32));
+            when "001"  => return std_logic_vector(resize(signed(h), 32));
+            when "100"  => return std_logic_vector(resize(unsigned(b), 32));
+            when "101"  => return std_logic_vector(resize(unsigned(h), 32));
+            when others => return w;
+        end case;
+    end function;
+
+    function ref_be(f : std_logic_vector(2 downto 0); a : std_logic_vector(1 downto 0)) return std_logic_vector is
+        variable r : std_logic_vector(3 downto 0) := "0000";
+    begin
+        case f(1 downto 0) is
+            when "00" =>
+                r(to_integer(unsigned(a))) := '1';
+            when "01" =>
+                if a = "00" then
+                    r := "0011";
+                elsif a = "10" then
+                    r := "1100";
+                end if;
+            when "10" =>
+                if a = "00" then
+                    r := "1111";
+                end if;
+            when others =>
+                null;
+        end case;
+        return r;
+    end function;
+
+    function ref_lanes(f : std_logic_vector(2 downto 0); d : std_logic_vector(31 downto 0)) return std_logic_vector is
+    begin
+        case f(1 downto 0) is
+            when "00"   => return d(7 downto 0) & d(7 downto 0) & d(7 downto 0) & d(7 downto 0);
+            when "01"   => return d(15 downto 0) & d(15 downto 0);
+            when others => return d;
         end case;
     end function;
 
@@ -124,7 +177,10 @@ begin
         variable err         : natural := 0;
         variable cnt         : natural := 0;
         variable n_r, n_i, n_b, n_taken, n_ill, n_lw, n_sw, n_sw_mis : natural := 0;
-        variable aligned     : boolean;
+        variable exp_be      : std_logic_vector(3 downto 0);
+        variable lanes       : std_logic_vector(31 downto 0);
+        variable n_ld        : cnt8_t := (others => 0);
+        variable n_st        : cnt8_t := (others => 0);
         variable mem         : mem_t := (others => (others => '0'));
         variable loads       : boolean;
         variable stores      : boolean;
@@ -234,18 +290,18 @@ begin
                         exp   := ref_alu(regs(rs1), regs(rs2), "0011");
                         taken := unsigned(regs(rs1)) >= unsigned(regs(rs2));
                 end case;
-            elsif opcode = OP_L and f3 = "010" then
+            elsif opcode = OP_L and (f3 = "000" or f3 = "001" or f3 = "010" or f3 = "100" or f3 = "101") then
                 legal  := true;
                 writes := true;
                 loads  := true;
                 imm    := (31 downto 12 => v(31)) & v(31 downto 20);
                 exp    := ref_alu(regs(rs1), imm, "0000");
                 if word_of(exp) < MEM_DEPTH then
-                    ld_val := mem(word_of(exp));
+                    ld_val := ref_load(f3, exp(1 downto 0), mem(word_of(exp)));
                 else
-                    ld_val := x"00000000";
+                    ld_val := ref_load(f3, exp(1 downto 0), x"00000000");
                 end if;
-            elsif opcode = OP_S and f3 = "010" then
+            elsif opcode = OP_S and (f3 = "000" or f3 = "001" or f3 = "010") then
                 legal  := true;
                 stores := true;
                 imm    := (31 downto 12 => v(31)) & v(31 downto 25) & v(11 downto 7);
@@ -263,22 +319,22 @@ begin
                     fail("alu_result got=0x" & to_hstring(alu_result) & " expected=0x" & to_hstring(exp));
                 end if;
                 if stores then
-                    aligned := exp(1 downto 0) = "00";
-                    if aligned then
-                        if be /= "1111" then
-                            fail("sw be got=" & to_string(be) & " expected=1111");
+                    exp_be := ref_be(f3, exp(1 downto 0));
+                    lanes  := ref_lanes(f3, regs(rs2));
+                    if be /= exp_be then
+                        fail("store be got=" & to_string(be) & " expected=" & to_string(exp_be));
+                    end if;
+                    for i in 0 to 3 loop
+                        if exp_be(i) = '1' and write_data(8 * i + 7 downto 8 * i) /= lanes(8 * i + 7 downto 8 * i) then
+                            fail("store write_data lane " & integer'image(i) & " got=0x" & to_hstring(write_data) &
+                                 " expected=0x" & to_hstring(lanes) & " be=" & to_string(exp_be));
                         end if;
-                        if write_data /= regs(rs2) then
-                            fail("sw write_data got=0x" & to_hstring(write_data) & " expected=0x" & to_hstring(regs(rs2)));
-                        end if;
-                    else
+                    end loop;
+                    if is_x(write_data) then
+                        fail("store write_data undefined: 0x" & to_hstring(write_data));
+                    end if;
+                    if exp_be = "0000" then
                         n_sw_mis := n_sw_mis + 1;
-                        if be /= "0000" then
-                            fail("misaligned sw be got=" & to_string(be) & " expected=0000");
-                        end if;
-                        if is_x(write_data) then
-                            fail("misaligned sw write_data undefined: 0x" & to_hstring(write_data));
-                        end if;
                     end if;
                 end if;
             else
@@ -288,7 +344,7 @@ begin
                 n_ill := n_ill + 1;
             end if;
             if stores and mem_write /= '1' then
-                fail("sw: mem_write=" & std_logic'image(mem_write) & ", expected '1'");
+                fail("store: mem_write=" & std_logic'image(mem_write) & ", expected '1'");
             elsif not stores and mem_write /= '0' then
                 fail("non-store: mem_write=" & std_logic'image(mem_write) & ", expected '0'");
             end if;
@@ -302,8 +358,14 @@ begin
                     regs(rd) := exp;
                 end if;
             end if;
-            if stores and exp(1 downto 0) = "00" and word_of(exp) < MEM_DEPTH then
-                mem(word_of(exp)) := regs(rs2);
+            if stores and word_of(exp) < MEM_DEPTH then
+                exp_be := ref_be(f3, exp(1 downto 0));
+                lanes  := ref_lanes(f3, regs(rs2));
+                for i in 0 to 3 loop
+                    if exp_be(i) = '1' then
+                        mem(word_of(exp))(8 * i + 7 downto 8 * i) := lanes(8 * i + 7 downto 8 * i);
+                    end if;
+                end loop;
                 dmem <= mem;
             end if;
             if taken then
@@ -330,7 +392,10 @@ begin
         type f3_arr_t is array (natural range <>) of std_logic_vector(2 downto 0);
         constant I_F3 : f3_arr_t := ("000", "010", "011", "100", "110", "111");
         constant B_F3 : f3_arr_t := ("000", "001", "100", "101", "110", "111");
-        constant BAD_LS_F3 : f3_arr_t := ("000", "001", "011", "100", "101", "110", "111");
+        constant L_F3      : f3_arr_t := ("000", "001", "010", "100", "101");
+        constant S_F3      : f3_arr_t := ("000", "001", "010");
+        constant BAD_L_F3  : f3_arr_t := ("011", "110", "111");
+        constant BAD_S_F3  : f3_arr_t := ("011", "100", "101", "110", "111");
 
         procedure check_mem is
         begin
@@ -367,32 +432,53 @@ begin
         v := enc_i(1234, 0, "000", 0);
         step;
         check_regs;
+        for i in 0 to MEM_DEPTH - 1 loop
+            v := enc_s(4 * i, 1 + rnd(31), 0, "010");
+            step;
+        end loop;
+        for i in 0 to 4 * MEM_DEPTH - 1 loop
+            v := enc_l(i, 0, L_F3(i mod 5), 1 + rnd(31));
+            step;
+        end loop;
+        for i in 0 to 4 * MEM_DEPTH - 1 loop
+            v := enc_s(i, 1 + rnd(31), 0, S_F3(i mod 3));
+            step;
+        end loop;
+        check_mem;
 
         for n in 1 to N_RANDOM loop
             kind := rnd(100);
             if kind < 12 then
                 n_lw := n_lw + 1;
+                f3 := L_F3(rnd(5));
+                n_ld(to_integer(unsigned(f3))) := n_ld(to_integer(unsigned(f3))) + 1;
                 if rnd(4) = 0 then
-                    v := enc_l(rnd(4096) - 2048, rnd_reg, "010", rnd_reg);
+                    v := enc_l(rnd(4096) - 2048, rnd_reg, f3, rnd_reg);
+                elsif rnd(3) = 0 then
+                    v := enc_l(4 * rnd(MEM_DEPTH + 4), 0, f3, rnd_reg);
                 else
-                    v := enc_l(4 * rnd(MEM_DEPTH + 4), 0, "010", rnd_reg);
+                    v := enc_l(rnd(4 * MEM_DEPTH + 16), 0, f3, rnd_reg);
                 end if;
                 step;
                 next;
             elsif kind < 24 then
                 n_sw := n_sw + 1;
+                f3 := S_F3(rnd(3));
+                n_st(to_integer(unsigned(f3))) := n_st(to_integer(unsigned(f3))) + 1;
                 if rnd(4) = 0 then
-                    v := enc_s(rnd(4096) - 2048, rnd_reg, rnd_reg, "010");
+                    v := enc_s(rnd(4096) - 2048, rnd_reg, rnd_reg, f3);
+                elsif rnd(3) = 0 then
+                    v := enc_s(4 * rnd(MEM_DEPTH + 4), rnd_reg, 0, f3);
                 else
-                    v := enc_s(4 * rnd(MEM_DEPTH + 4), rnd_reg, 0, "010");
+                    v := enc_s(rnd(4 * MEM_DEPTH + 16), rnd_reg, 0, f3);
                 end if;
                 step;
                 next;
             elsif kind < 26 then
                 if rnd(2) = 1 then
-                    v := enc_l(4 * rnd(MEM_DEPTH), 0, BAD_LS_F3(rnd(7)), rnd_reg);
+                    v := enc_l(rnd(4 * MEM_DEPTH), 0, BAD_L_F3(rnd(3)), rnd_reg);
                 else
-                    v := enc_s(4 * rnd(MEM_DEPTH), rnd_reg, 0, BAD_LS_F3(1 + rnd(6)));
+                    v := enc_s(rnd(4 * MEM_DEPTH), rnd_reg, 0, BAD_S_F3(rnd(5)));
                 end if;
                 step;
                 next;
@@ -448,8 +534,11 @@ begin
         check_mem;
 
         report "cycles " & integer'image(cnt) & ": R " & integer'image(n_r) & ", I " & integer'image(n_i)
-            & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), lw " & integer'image(n_lw)
-            & ", sw " & integer'image(n_sw) & " (misaligned " & integer'image(n_sw_mis) & "), illegal " & integer'image(n_ill) severity note;
+            & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), load " & integer'image(n_lw)
+            & " (lb " & integer'image(n_ld(0)) & ", lh " & integer'image(n_ld(1)) & ", lw " & integer'image(n_ld(2))
+            & ", lbu " & integer'image(n_ld(4)) & ", lhu " & integer'image(n_ld(5)) & "), store " & integer'image(n_sw)
+            & " (sb " & integer'image(n_st(0)) & ", sh " & integer'image(n_st(1)) & ", sw " & integer'image(n_st(2))
+            & ", misaligned " & integer'image(n_sw_mis) & "), illegal " & integer'image(n_ill) severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else

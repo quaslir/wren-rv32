@@ -1,211 +1,410 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity tb_control_unit is
+    generic(
+        PASSES : positive := 2;
+        SEED1  : positive := 11;
+        SEED2  : positive := 29
+    );
 end entity tb_control_unit;
 
 architecture sim of tb_control_unit is
-    signal instr     : std_logic_vector(31 downto 0) := (others => '0');
-    signal reg_write : std_logic;
-    signal alu_op    : std_logic_vector(3 downto 0);
-    signal alu_src   : std_logic;
-    signal illegal   : std_logic;
-    signal imm_src   : std_logic_vector(2 downto 0);
-    signal branch    : std_logic;
-    signal mem_write : std_logic;
-    signal result_src: std_logic_vector(1 downto 0);
+    signal instr      : std_logic_vector(31 downto 0) := (others => '0');
+    signal reg_write  : std_logic;
+    signal alu_op     : std_logic_vector(3 downto 0);
+    signal alu_src    : std_logic;
+    signal illegal    : std_logic;
+    signal imm_src    : std_logic_vector(2 downto 0);
+    signal branch     : std_logic;
+    signal mem_write  : std_logic;
+    signal result_src : std_logic_vector(1 downto 0);
+    signal mem_access : std_logic;
 
-    type vec_t is record
-        name      : string(1 to 20);
-        instr     : std_logic_vector(31 downto 0);
-        reg_write : std_logic;
-        alu_src   : std_logic;
-        alu_op    : std_logic_vector(3 downto 0);
-        imm_src   : std_logic_vector(2 downto 0);
-        branch    : std_logic;
-        illegal   : std_logic;
-        mem_write : std_logic;
-        result_src: std_logic_vector(1 downto 0);
+    constant OP_R : std_logic_vector(6 downto 0) := "0110011";
+    constant OP_I : std_logic_vector(6 downto 0) := "0010011";
+    constant OP_B : std_logic_vector(6 downto 0) := "1100011";
+    constant OP_L : std_logic_vector(6 downto 0) := "0000011";
+    constant OP_S : std_logic_vector(6 downto 0) := "0100011";
+
+    type ctrl_t is record
+        reg_write   : std_logic;
+        alu_src     : std_logic;
+        illegal     : std_logic;
+        branch      : std_logic;
+        mem_write   : std_logic;
+        mem_access  : std_logic;
+        alu_op      : std_logic_vector(3 downto 0);
+        imm_src     : std_logic_vector(2 downto 0);
+        result_src  : std_logic_vector(1 downto 0);
+        c_alu_src   : boolean;
+        c_alu_op    : boolean;
+        c_imm_src   : boolean;
+        c_result    : boolean;
     end record;
 
-    type vec_array_t is array (natural range <>) of vec_t;
-
-    constant VECTORS : vec_array_t := (
-        ("add                 ", x"002081B3", '1', '0', "0000", "---", '0', '0', '0', "00"),
-        ("sub                 ", x"402081B3", '1', '0', "1000", "---", '0', '0', '0', "00"),
-        ("sll                 ", x"002091B3", '1', '0', "0001", "---", '0', '0', '0', "00"),
-        ("slt                 ", x"0020A1B3", '1', '0', "0010", "---", '0', '0', '0', "00"),
-        ("sltu                ", x"0020B1B3", '1', '0', "0011", "---", '0', '0', '0', "00"),
-        ("xor                 ", x"0020C1B3", '1', '0', "0100", "---", '0', '0', '0', "00"),
-        ("srl                 ", x"0020D1B3", '1', '0', "0101", "---", '0', '0', '0', "00"),
-        ("sra                 ", x"4020D1B3", '1', '0', "1101", "---", '0', '0', '0', "00"),
-        ("or                  ", x"0020E1B3", '1', '0', "0110", "---", '0', '0', '0', "00"),
-        ("and                 ", x"0020F1B3", '1', '0', "0111", "---", '0', '0', '0', "00"),
-        ("mul_div_f3_0        ", x"022081B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_1        ", x"022091B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_2        ", x"0220A1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_3        ", x"0220B1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_4        ", x"0220C1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_5        ", x"0220D1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_6        ", x"0220E1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("mul_div_f3_7        ", x"0220F1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0100000_f3_1   ", x"402091B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0100000_f3_2   ", x"4020A1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0100000_f3_3   ", x"4020B1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0100000_f3_4   ", x"4020C1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0100000_f3_6   ", x"4020E1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0100000_f3_7   ", x"4020F1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_1111111        ", x"FE2081B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("r_f7_0000010        ", x"0420D1B3", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("addi_5              ", x"00510093", '1', '1', "0000", "000", '0', '0', '0', "00"),
-        ("addi_-1             ", x"FFF10093", '1', '1', "0000", "000", '0', '0', '0', "00"),
-        ("addi_1024           ", x"40010093", '1', '1', "0000", "000", '0', '0', '0', "00"),
-        ("addi_-2048          ", x"80010093", '1', '1', "0000", "000", '0', '0', '0', "00"),
-        ("addi_2047           ", x"7FF10093", '1', '1', "0000", "000", '0', '0', '0', "00"),
-        ("slti_5              ", x"00512093", '1', '1', "0010", "000", '0', '0', '0', "00"),
-        ("slti_-1             ", x"FFF12093", '1', '1', "0010", "000", '0', '0', '0', "00"),
-        ("slti_1024           ", x"40012093", '1', '1', "0010", "000", '0', '0', '0', "00"),
-        ("slti_-2048          ", x"80012093", '1', '1', "0010", "000", '0', '0', '0', "00"),
-        ("slti_2047           ", x"7FF12093", '1', '1', "0010", "000", '0', '0', '0', "00"),
-        ("sltiu_5             ", x"00513093", '1', '1', "0011", "000", '0', '0', '0', "00"),
-        ("sltiu_-1            ", x"FFF13093", '1', '1', "0011", "000", '0', '0', '0', "00"),
-        ("sltiu_1024          ", x"40013093", '1', '1', "0011", "000", '0', '0', '0', "00"),
-        ("sltiu_-2048         ", x"80013093", '1', '1', "0011", "000", '0', '0', '0', "00"),
-        ("sltiu_2047          ", x"7FF13093", '1', '1', "0011", "000", '0', '0', '0', "00"),
-        ("xori_5              ", x"00514093", '1', '1', "0100", "000", '0', '0', '0', "00"),
-        ("xori_-1             ", x"FFF14093", '1', '1', "0100", "000", '0', '0', '0', "00"),
-        ("xori_1024           ", x"40014093", '1', '1', "0100", "000", '0', '0', '0', "00"),
-        ("xori_-2048          ", x"80014093", '1', '1', "0100", "000", '0', '0', '0', "00"),
-        ("xori_2047           ", x"7FF14093", '1', '1', "0100", "000", '0', '0', '0', "00"),
-        ("ori_5               ", x"00516093", '1', '1', "0110", "000", '0', '0', '0', "00"),
-        ("ori_-1              ", x"FFF16093", '1', '1', "0110", "000", '0', '0', '0', "00"),
-        ("ori_1024            ", x"40016093", '1', '1', "0110", "000", '0', '0', '0', "00"),
-        ("ori_-2048           ", x"80016093", '1', '1', "0110", "000", '0', '0', '0', "00"),
-        ("ori_2047            ", x"7FF16093", '1', '1', "0110", "000", '0', '0', '0', "00"),
-        ("andi_5              ", x"00517093", '1', '1', "0111", "000", '0', '0', '0', "00"),
-        ("andi_-1             ", x"FFF17093", '1', '1', "0111", "000", '0', '0', '0', "00"),
-        ("andi_1024           ", x"40017093", '1', '1', "0111", "000", '0', '0', '0', "00"),
-        ("andi_-2048          ", x"80017093", '1', '1', "0111", "000", '0', '0', '0', "00"),
-        ("andi_2047           ", x"7FF17093", '1', '1', "0111", "000", '0', '0', '0', "00"),
-        ("slli_0              ", x"00011093", '1', '1', "0001", "000", '0', '0', '0', "00"),
-        ("srli_0              ", x"00015093", '1', '1', "0101", "000", '0', '0', '0', "00"),
-        ("srai_0              ", x"40015093", '1', '1', "1101", "000", '0', '0', '0', "00"),
-        ("slli_3              ", x"00311093", '1', '1', "0001", "000", '0', '0', '0', "00"),
-        ("srli_3              ", x"00315093", '1', '1', "0101", "000", '0', '0', '0', "00"),
-        ("srai_3              ", x"40315093", '1', '1', "1101", "000", '0', '0', '0', "00"),
-        ("slli_31             ", x"01F11093", '1', '1', "0001", "000", '0', '0', '0', "00"),
-        ("srli_31             ", x"01F15093", '1', '1', "0101", "000", '0', '0', '0', "00"),
-        ("srai_31             ", x"41F15093", '1', '1', "1101", "000", '0', '0', '0', "00"),
-        ("slli_bad_f7_20      ", x"40311093", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("slli_bad_f7_01      ", x"02311093", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("slli_bad_f7_7f      ", x"FE311093", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("srx_bad_f7_01       ", x"02315093", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("srx_bad_f7_60       ", x"C0315093", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("srx_bad_f7_7f       ", x"FE315093", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("beq_8               ", x"00208463", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("beq_-8              ", x"FE208CE3", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("beq_4094            ", x"7E208FE3", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("beq_-4096           ", x"80208063", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("beq_0               ", x"00208063", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("bne_8               ", x"00209463", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("bne_-8              ", x"FE209CE3", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("bne_4094            ", x"7E209FE3", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("bne_-4096           ", x"80209063", '0', '0', "1000", "010", '1', '0', '0', "--"),
-        ("blt_8               ", x"0020C463", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("blt_-8              ", x"FE20CCE3", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("blt_4094            ", x"7E20CFE3", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("blt_-4096           ", x"8020C063", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("bge_8               ", x"0020D463", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("bge_-8              ", x"FE20DCE3", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("bge_4094            ", x"7E20DFE3", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("bge_-4096           ", x"8020D063", '0', '0', "0010", "010", '1', '0', '0', "--"),
-        ("bltu_8              ", x"0020E463", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bltu_-8             ", x"FE20ECE3", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bltu_4094           ", x"7E20EFE3", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bltu_-4096          ", x"8020E063", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bgeu_8              ", x"0020F463", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bgeu_-8             ", x"FE20FCE3", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bgeu_4094           ", x"7E20FFE3", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("bgeu_-4096          ", x"8020F063", '0', '0', "0011", "010", '1', '0', '0', "--"),
-        ("b_f3_2              ", x"0020A463", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("b_f3_3              ", x"0020B463", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("lui                 ", x"000010B7", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("auipc               ", x"00001097", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("jal                 ", x"008000EF", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("jalr                ", x"000080E7", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("ecall               ", x"00000073", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("fence               ", x"0000000F", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("zero                ", x"00000000", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("ones                ", x"FFFFFFFF", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("lw_0                ", x"00012083", '1', '1', "0000", "000", '0', '0', '0', "01"),
-        ("sw_0                ", x"00112023", '0', '1', "0000", "001", '0', '0', '1', "--"),
-        ("lw_4                ", x"00412083", '1', '1', "0000", "000", '0', '0', '0', "01"),
-        ("sw_4                ", x"00112223", '0', '1', "0000", "001", '0', '0', '1', "--"),
-        ("lw_-4               ", x"FFC12083", '1', '1', "0000", "000", '0', '0', '0', "01"),
-        ("sw_-4               ", x"FE112E23", '0', '1', "0000", "001", '0', '0', '1', "--"),
-        ("lw_2047             ", x"7FF12083", '1', '1', "0000", "000", '0', '0', '0', "01"),
-        ("sw_2047             ", x"7E112FA3", '0', '1', "0000", "001", '0', '0', '1', "--"),
-        ("lw_-2048            ", x"80012083", '1', '1', "0000", "000", '0', '0', '0', "01"),
-        ("sw_-2048            ", x"80112023", '0', '1', "0000", "001", '0', '0', '1', "--"),
-        ("lb                  ", x"00410083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("lh                  ", x"00411083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("lbu                 ", x"00414083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("lhu                 ", x"00415083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("load_f3_3           ", x"00413083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("load_f3_6           ", x"00416083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("load_f3_7           ", x"00417083", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("sb                  ", x"00110223", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("sh                  ", x"00111223", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("store_f3_3          ", x"00113223", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("store_f3_4          ", x"00114223", '0', '-', "----", "---", '0', '1', '0', "--"),
-        ("store_f3_7          ", x"00117223", '0', '-', "----", "---", '0', '1', '0', "--")
+    constant ILLEGAL_CTRL : ctrl_t := (
+        reg_write => '0', alu_src => '-', illegal => '1', branch => '0',
+        mem_write => '0', mem_access => '0', alu_op => "----", imm_src => "---",
+        result_src => "--", c_alu_src => false, c_alu_op => false,
+        c_imm_src => false, c_result => false
     );
+
+    function ref_ctrl(v : std_logic_vector(31 downto 0)) return ctrl_t is
+        variable op : std_logic_vector(6 downto 0) := v(6 downto 0);
+        variable f3 : std_logic_vector(2 downto 0) := v(14 downto 12);
+        variable f7 : std_logic_vector(6 downto 0) := v(31 downto 25);
+        variable c  : ctrl_t := ILLEGAL_CTRL;
+    begin
+        if op = OP_R then
+            if f7 = "0000000" or (f7 = "0100000" and (f3 = "000" or f3 = "101")) then
+                c := ('1', '0', '0', '0', '0', '0', f7(5) & f3, "---", "00", true, true, false, true);
+            end if;
+        elsif op = OP_I then
+            if f3 = "001" then
+                if f7 = "0000000" then
+                    c := ('1', '1', '0', '0', '0', '0', "0001", "000", "00", true, true, true, true);
+                end if;
+            elsif f3 = "101" then
+                if f7 = "0000000" then
+                    c := ('1', '1', '0', '0', '0', '0', "0101", "000", "00", true, true, true, true);
+                elsif f7 = "0100000" then
+                    c := ('1', '1', '0', '0', '0', '0', "1101", "000", "00", true, true, true, true);
+                end if;
+            else
+                c := ('1', '1', '0', '0', '0', '0', '0' & f3, "000", "00", true, true, true, true);
+            end if;
+        elsif op = OP_B then
+            case f3 is
+                when "000" | "001" =>
+                    c := ('0', '0', '0', '1', '0', '0', "1000", "010", "--", true, true, true, false);
+                when "100" | "101" =>
+                    c := ('0', '0', '0', '1', '0', '0', "0010", "010", "--", true, true, true, false);
+                when "110" | "111" =>
+                    c := ('0', '0', '0', '1', '0', '0', "0011", "010", "--", true, true, true, false);
+                when others =>
+                    null;
+            end case;
+        elsif op = OP_L then
+            case f3 is
+                when "000" | "001" | "010" | "100" | "101" =>
+                    c := ('1', '1', '0', '0', '0', '1', "0000", "000", "01", true, true, true, true);
+                when others =>
+                    null;
+            end case;
+        elsif op = OP_S then
+            case f3 is
+                when "000" | "001" | "010" =>
+                    c := ('0', '1', '0', '0', '1', '1', "0000", "001", "--", true, true, true, false);
+                when others =>
+                    null;
+            end case;
+        end if;
+        return c;
+    end function;
+
+    function enc_r(f7 : std_logic_vector(6 downto 0); f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+    begin
+        return f7 & "00011" & "00010" & f3 & "00001" & OP_R;
+    end function;
+
+    function enc_i(imm : integer; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+    begin
+        return std_logic_vector(to_signed(imm, 12)) & "00010" & f3 & "00001" & OP_I;
+    end function;
+
+    function enc_sh(f7 : std_logic_vector(6 downto 0); sh : natural; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+    begin
+        return f7 & std_logic_vector(to_unsigned(sh, 5)) & "00010" & f3 & "00001" & OP_I;
+    end function;
+
+    function enc_b(f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+    begin
+        return "0000000" & "00011" & "00010" & f3 & "01000" & OP_B;
+    end function;
+
+    function enc_l(imm : integer; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+    begin
+        return std_logic_vector(to_signed(imm, 12)) & "00010" & f3 & "00001" & OP_L;
+    end function;
+
+    function enc_s(imm : integer; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
+        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
+    begin
+        return u(11 downto 5) & "00011" & "00010" & f3 & u(4 downto 0) & OP_S;
+    end function;
+
+    type vec_t is record
+        name : string(1 to 12);
+        v    : std_logic_vector(31 downto 0);
+        rw   : std_logic;
+        src  : std_logic;
+        op   : std_logic_vector(3 downto 0);
+        imm  : std_logic_vector(2 downto 0);
+        br   : std_logic;
+        mw   : std_logic;
+        rs   : std_logic_vector(1 downto 0);
+        ma   : std_logic;
+        il   : std_logic;
+    end record;
+    type vec_arr_t is array (natural range <>) of vec_t;
+
+    constant DIRECTED : vec_arr_t := (
+        ("add         ", enc_r("0000000", "000"), '1', '0', "0000", "---", '0', '0', "00", '0', '0'),
+        ("sub         ", enc_r("0100000", "000"), '1', '0', "1000", "---", '0', '0', "00", '0', '0'),
+        ("sll         ", enc_r("0000000", "001"), '1', '0', "0001", "---", '0', '0', "00", '0', '0'),
+        ("slt         ", enc_r("0000000", "010"), '1', '0', "0010", "---", '0', '0', "00", '0', '0'),
+        ("sltu        ", enc_r("0000000", "011"), '1', '0', "0011", "---", '0', '0', "00", '0', '0'),
+        ("xor         ", enc_r("0000000", "100"), '1', '0', "0100", "---", '0', '0', "00", '0', '0'),
+        ("srl         ", enc_r("0000000", "101"), '1', '0', "0101", "---", '0', '0', "00", '0', '0'),
+        ("sra         ", enc_r("0100000", "101"), '1', '0', "1101", "---", '0', '0', "00", '0', '0'),
+        ("or          ", enc_r("0000000", "110"), '1', '0', "0110", "---", '0', '0', "00", '0', '0'),
+        ("and         ", enc_r("0000000", "111"), '1', '0', "0111", "---", '0', '0', "00", '0', '0'),
+        ("addi +      ", enc_i(2047, "000"), '1', '1', "0000", "000", '0', '0', "00", '0', '0'),
+        ("addi -      ", enc_i(-2048, "000"), '1', '1', "0000", "000", '0', '0', "00", '0', '0'),
+        ("addi -1     ", enc_i(-1, "000"), '1', '1', "0000", "000", '0', '0', "00", '0', '0'),
+        ("slti -      ", enc_i(-1024, "010"), '1', '1', "0010", "000", '0', '0', "00", '0', '0'),
+        ("sltiu -1    ", enc_i(-1, "011"), '1', '1', "0011", "000", '0', '0', "00", '0', '0'),
+        ("xori -1     ", enc_i(-1, "100"), '1', '1', "0100", "000", '0', '0', "00", '0', '0'),
+        ("ori -       ", enc_i(-1366, "110"), '1', '1', "0110", "000", '0', '0', "00", '0', '0'),
+        ("andi -      ", enc_i(-2048, "111"), '1', '1', "0111", "000", '0', '0', "00", '0', '0'),
+        ("slli 31     ", enc_sh("0000000", 31, "001"), '1', '1', "0001", "000", '0', '0', "00", '0', '0'),
+        ("srli 31     ", enc_sh("0000000", 31, "101"), '1', '1', "0101", "000", '0', '0', "00", '0', '0'),
+        ("srai 31     ", enc_sh("0100000", 31, "101"), '1', '1', "1101", "000", '0', '0', "00", '0', '0'),
+        ("srai 0      ", enc_sh("0100000", 0, "101"), '1', '1', "1101", "000", '0', '0', "00", '0', '0'),
+        ("nop         ", x"00000013", '1', '1', "0000", "000", '0', '0', "00", '0', '0'),
+        ("beq         ", enc_b("000"), '0', '0', "1000", "010", '1', '0', "--", '0', '0'),
+        ("bne         ", enc_b("001"), '0', '0', "1000", "010", '1', '0', "--", '0', '0'),
+        ("blt         ", enc_b("100"), '0', '0', "0010", "010", '1', '0', "--", '0', '0'),
+        ("bge         ", enc_b("101"), '0', '0', "0010", "010", '1', '0', "--", '0', '0'),
+        ("bltu        ", enc_b("110"), '0', '0', "0011", "010", '1', '0', "--", '0', '0'),
+        ("bgeu        ", enc_b("111"), '0', '0', "0011", "010", '1', '0', "--", '0', '0'),
+        ("lb -        ", enc_l(-1, "000"), '1', '1', "0000", "000", '0', '0', "01", '1', '0'),
+        ("lh +        ", enc_l(2046, "001"), '1', '1', "0000", "000", '0', '0', "01", '1', '0'),
+        ("lw -        ", enc_l(-2048, "010"), '1', '1', "0000", "000", '0', '0', "01", '1', '0'),
+        ("lbu +       ", enc_l(3, "100"), '1', '1', "0000", "000", '0', '0', "01", '1', '0'),
+        ("lhu -       ", enc_l(-2, "101"), '1', '1', "0000", "000", '0', '0', "01", '1', '0'),
+        ("sb -        ", enc_s(-1, "000"), '0', '1', "0000", "001", '0', '1', "--", '1', '0'),
+        ("sh +        ", enc_s(2046, "001"), '0', '1', "0000", "001", '0', '1', "--", '1', '0'),
+        ("sw -        ", enc_s(-2048, "010"), '0', '1', "0000", "001", '0', '1', "--", '1', '0'),
+        ("mul         ", enc_r("0000001", "000"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("div         ", enc_r("0000001", "100"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("R f7=0100000", enc_r("0100000", "001"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("R f7=0100000", enc_r("0100000", "111"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("R f7=1000000", enc_r("1000000", "000"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("slli f7 bad ", enc_sh("0100000", 1, "001"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("slli f7 bad ", enc_sh("0000001", 1, "001"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("srli f7 bad ", enc_sh("0000001", 1, "101"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("srai f7 bad ", enc_sh("0110000", 1, "101"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("B f3=010    ", enc_b("010"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("B f3=011    ", enc_b("011"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("load f3=011 ", enc_l(0, "011"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("load f3=110 ", enc_l(0, "110"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("load f3=111 ", enc_l(0, "111"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("store f3=011", enc_s(0, "011"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("store f3=100", enc_s(0, "100"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("store f3=101", enc_s(0, "101"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("store f3=110", enc_s(0, "110"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("store f3=111", enc_s(0, "111"), '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("jal         ", x"0080006F", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("jalr        ", x"000080E7", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("lui         ", x"123450B7", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("auipc       ", x"12345097", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("fence       ", x"0FF0000F", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("ecall       ", x"00000073", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("ebreak      ", x"00100073", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("zero word   ", x"00000000", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("all ones    ", x"FFFFFFFF", '0', '-', "----", "---", '0', '0', "--", '0', '1'),
+        ("custom-0    ", x"0000000B", '0', '-', "----", "---", '0', '0', "--", '0', '1')
+    );
+
+    function std_match_v(got, exp : std_logic_vector) return boolean is
+    begin
+        for i in got'range loop
+            if exp(i) /= '-' and got(i) /= exp(i) then
+                return false;
+            end if;
+        end loop;
+        return true;
+    end function;
 begin
     dut : entity work.control_unit
         port map(
-            instr     => instr,
-            reg_write => reg_write,
-            alu_op    => alu_op,
-            alu_src   => alu_src,
-            illegal   => illegal,
-            imm_src   => imm_src,
-            branch    => branch,
-            mem_write => mem_write,
-            result_src => result_src
+            instr      => instr,
+            reg_write  => reg_write,
+            alu_op     => alu_op,
+            alu_src    => alu_src,
+            illegal    => illegal,
+            imm_src    => imm_src,
+            branch     => branch,
+            mem_write  => mem_write,
+            result_src => result_src,
+            mem_access => mem_access
         );
 
     stim : process
-        variable err : natural := 0;
-        variable v   : vec_t;
-    begin
-        for i in VECTORS'range loop
-            v := VECTORS(i);
-            instr <= v.instr;
-            wait for 10 ns;
-            if not (std_match(reg_write, v.reg_write) and std_match(alu_src, v.alu_src)
-                    and std_match(alu_op, v.alu_op) and std_match(imm_src, v.imm_src)
-                    and std_match(branch, v.branch) and std_match(illegal, v.illegal)
-                    and std_match(mem_write, v.mem_write) and std_match(result_src, v.result_src)) then
-                report "FAIL " & v.name & " instr=0x" & to_hstring(v.instr)
-                    & " | got rw=" & std_logic'image(reg_write) & " src=" & std_logic'image(alu_src)
-                    & " op=" & to_string(alu_op) & " imm=" & to_string(imm_src)
-                    & " br=" & std_logic'image(branch) & " ill=" & std_logic'image(illegal)
-                    & " mw=" & std_logic'image(mem_write) & " rs=" & to_string(result_src)
-                    & " | exp rw=" & std_logic'image(v.reg_write) & " src=" & std_logic'image(v.alu_src)
-                    & " op=" & to_string(v.alu_op) & " imm=" & to_string(v.imm_src)
-                    & " br=" & std_logic'image(v.branch) & " ill=" & std_logic'image(v.illegal)
-                    & " mw=" & std_logic'image(v.mem_write) & " rs=" & to_string(v.result_src)
-                    severity error;
-                err := err + 1;
+        variable errors  : natural := 0;
+        variable checks  : natural := 0;
+        variable n_legal : natural := 0;
+        variable n_ill   : natural := 0;
+        variable s1      : positive := SEED1;
+        variable s2      : positive := SEED2;
+        variable r       : real;
+        variable v       : std_logic_vector(31 downto 0);
+        variable c       : ctrl_t;
+
+        impure function rnd5 return std_logic_vector is
+        begin
+            uniform(s1, s2, r);
+            return std_logic_vector(to_unsigned(integer(trunc(r * 32.0)) mod 32, 5));
+        end function;
+
+        procedure fail(tag : string; msg : string) is
+        begin
+            errors := errors + 1;
+            if errors <= 30 then
+                report tag & " instr=0x" & to_hstring(instr) & ": " & msg severity error;
             end if;
+        end procedure;
+
+        procedure chk1(tag, name : string; got, exp : std_logic) is
+        begin
+            checks := checks + 1;
+            if exp /= '-' and got /= exp then
+                fail(tag, name & " got=" & std_logic'image(got) & " expected=" & std_logic'image(exp));
+            end if;
+        end procedure;
+
+        procedure chkv(tag, name : string; got, exp : std_logic_vector) is
+        begin
+            checks := checks + 1;
+            if not std_match_v(got, exp) then
+                fail(tag, name & " got=" & to_string(got) & " expected=" & to_string(exp));
+            end if;
+        end procedure;
+
+        procedure check_defined(tag : string) is
+        begin
+            checks := checks + 1;
+            if is_x(reg_write & alu_op & alu_src & illegal & imm_src & branch & mem_write & result_src & mem_access) then
+                fail(tag, "undefined output: rw=" & std_logic'image(reg_write) & " op=" & to_string(alu_op) &
+                     " src=" & std_logic'image(alu_src) & " il=" & std_logic'image(illegal) &
+                     " imm=" & to_string(imm_src) & " br=" & std_logic'image(branch) &
+                     " mw=" & std_logic'image(mem_write) & " rs=" & to_string(result_src) &
+                     " ma=" & std_logic'image(mem_access));
+            end if;
+        end procedure;
+
+        procedure check_invariants(tag : string) is
+        begin
+            checks := checks + 1;
+            if illegal = '1' and (reg_write = '1' or mem_write = '1' or branch = '1' or mem_access = '1') then
+                fail(tag, "illegal instruction has side effects");
+            end if;
+            if mem_write = '1' and mem_access = '0' then
+                fail(tag, "mem_write=1 without mem_access");
+            end if;
+            if mem_write = '1' and reg_write = '1' then
+                fail(tag, "store writes register");
+            end if;
+            if branch = '1' and (reg_write = '1' or mem_write = '1' or mem_access = '1') then
+                fail(tag, "branch has side effects");
+            end if;
+            if mem_access = '1' and alu_src /= '1' then
+                fail(tag, "memory access without immediate operand");
+            end if;
+            if mem_access = '1' and alu_op /= "0000" then
+                fail(tag, "memory address not computed with ADD");
+            end if;
+            if reg_write = '1' and result_src = "01" and mem_access = '0' then
+                fail(tag, "load result selected without mem_access");
+            end if;
+        end procedure;
+
+        procedure check_ref(tag : string) is
+        begin
+            c := ref_ctrl(instr);
+            chk1(tag, "reg_write", reg_write, c.reg_write);
+            chk1(tag, "illegal", illegal, c.illegal);
+            chk1(tag, "branch", branch, c.branch);
+            chk1(tag, "mem_write", mem_write, c.mem_write);
+            chk1(tag, "mem_access", mem_access, c.mem_access);
+            if c.c_alu_src then
+                chk1(tag, "alu_src", alu_src, c.alu_src);
+            end if;
+            if c.c_alu_op then
+                chkv(tag, "alu_op", alu_op, c.alu_op);
+            end if;
+            if c.c_imm_src then
+                chkv(tag, "imm_src", imm_src, c.imm_src);
+            end if;
+            if c.c_result then
+                chkv(tag, "result_src", result_src, c.result_src);
+            end if;
+            check_defined(tag);
+            check_invariants(tag);
+            if c.illegal = '1' then
+                n_ill := n_ill + 1;
+            else
+                n_legal := n_legal + 1;
+            end if;
+        end procedure;
+    begin
+        for k in DIRECTED'range loop
+            instr <= DIRECTED(k).v;
+            wait for 1 ns;
+            chk1(DIRECTED(k).name, "reg_write", reg_write, DIRECTED(k).rw);
+            chk1(DIRECTED(k).name, "alu_src", alu_src, DIRECTED(k).src);
+            chkv(DIRECTED(k).name, "alu_op", alu_op, DIRECTED(k).op);
+            chkv(DIRECTED(k).name, "imm_src", imm_src, DIRECTED(k).imm);
+            chk1(DIRECTED(k).name, "branch", branch, DIRECTED(k).br);
+            chk1(DIRECTED(k).name, "mem_write", mem_write, DIRECTED(k).mw);
+            chkv(DIRECTED(k).name, "result_src", result_src, DIRECTED(k).rs);
+            chk1(DIRECTED(k).name, "mem_access", mem_access, DIRECTED(k).ma);
+            chk1(DIRECTED(k).name, "illegal", illegal, DIRECTED(k).il);
+            check_defined(DIRECTED(k).name);
+            check_invariants(DIRECTED(k).name);
         end loop;
 
-        if err = 0 then
-            report "tb_control_unit: ALL " & integer'image(VECTORS'length) & " TESTS PASSED" severity note;
-        else
-            report "tb_control_unit: " & integer'image(err) & " / " & integer'image(VECTORS'length) & " FAILED" severity failure;
-        end if;
+        for p in 1 to PASSES loop
+            for op in 0 to 127 loop
+                for f3 in 0 to 7 loop
+                    for f7 in 0 to 127 loop
+                        v := std_logic_vector(to_unsigned(f7, 7)) & rnd5 & rnd5 &
+                             std_logic_vector(to_unsigned(f3, 3)) & rnd5 &
+                             std_logic_vector(to_unsigned(op, 7));
+                        instr <= v;
+                        wait for 1 ns;
+                        check_ref("exhaustive");
+                    end loop;
+                end loop;
+            end loop;
+        end loop;
+
+        for op in 0 to 127 loop
+            for f3 in 0 to 7 loop
+                for f7 in 0 to 127 loop
+                    v := std_logic_vector(to_unsigned(f7, 7)) & "11111" & "11111" &
+                         std_logic_vector(to_unsigned(f3, 3)) & "11111" &
+                         std_logic_vector(to_unsigned(op, 7));
+                    instr <= v;
+                    wait for 1 ns;
+                    check_ref("fields=1");
+                    v(24 downto 15) := (others => '0');
+                    v(11 downto 7)  := (others => '0');
+                    instr <= v;
+                    wait for 1 ns;
+                    check_ref("fields=0");
+                end loop;
+            end loop;
+        end loop;
+
+        report "tb_control_unit: " & integer'image(checks) & " checks (" & integer'image(n_legal) &
+               " legal, " & integer'image(n_ill) & " illegal vectors), " & integer'image(errors) & " errors";
+        assert errors = 0 report "tb_control_unit FAILED" severity failure;
+        report "tb_control_unit PASSED";
         std.env.finish;
     end process;
 end architecture sim;
