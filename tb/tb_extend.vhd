@@ -4,40 +4,16 @@ use ieee.numeric_std.all;
 use ieee.math_real.all;
 
 entity tb_extend is
+    generic(
+        FILLS             : positive := 4;
+        CHECK_UNUSED_ZERO : boolean  := true
+    );
 end entity tb_extend;
 
 architecture sim of tb_extend is
     signal instr   : std_logic_vector(31 downto 0) := (others => '0');
-    signal imm_src : std_logic_vector(2 downto 0) := "000";
+    signal imm_src : std_logic_vector(2 downto 0)  := (others => '0');
     signal imm_ext : std_logic_vector(31 downto 0);
-
-    function enc_i(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
-        variable v : std_logic_vector(31 downto 0) := other;
-        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
-    begin
-        v(31 downto 20) := u;
-        return v;
-    end function;
-
-    function enc_s(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
-        variable v : std_logic_vector(31 downto 0) := other;
-        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
-    begin
-        v(31 downto 25) := u(11 downto 5);
-        v(11 downto 7)  := u(4 downto 0);
-        return v;
-    end function;
-
-    function enc_b(imm : integer; other : std_logic_vector(31 downto 0)) return std_logic_vector is
-        variable v : std_logic_vector(31 downto 0) := other;
-        variable u : std_logic_vector(12 downto 0) := std_logic_vector(to_signed(imm, 13));
-    begin
-        v(31)           := u(12);
-        v(30 downto 25) := u(10 downto 5);
-        v(11 downto 8)  := u(4 downto 1);
-        v(7)            := u(11);
-        return v;
-    end function;
 begin
     dut : entity work.extend
         port map(
@@ -47,87 +23,114 @@ begin
         );
 
     stim : process
-        variable err   : natural := 0;
-        variable cnt   : natural := 0;
-        variable s1    : positive := 42;
-        variable s2    : positive := 7;
-        variable r     : real;
-        variable other : std_logic_vector(31 downto 0);
+        variable errors : natural := 0;
+        variable checks : natural := 0;
+        variable s1     : positive := 55;
+        variable s2     : positive := 66;
+        variable r      : real;
+        variable fill   : std_logic_vector(31 downto 0);
+        variable v      : std_logic_vector(31 downto 0);
+        variable u12    : std_logic_vector(11 downto 0);
+        variable u13    : std_logic_vector(12 downto 0);
+        variable exp    : std_logic_vector(31 downto 0);
 
-        impure function rand_word return std_logic_vector is
+        impure function rnd_word return std_logic_vector is
             variable w : std_logic_vector(31 downto 0);
         begin
-            for b in 0 to 31 loop
+            for i in 0 to 3 loop
                 uniform(s1, s2, r);
-                if r < 0.5 then
-                    w(b) := '0';
-                else
-                    w(b) := '1';
-                end if;
+                w(8 * i + 7 downto 8 * i) := std_logic_vector(to_unsigned(integer(trunc(r * 256.0)) mod 256, 8));
             end loop;
             return w;
         end function;
 
-        procedure check(name : string; i : std_logic_vector(31 downto 0); src : std_logic_vector(2 downto 0); expected : integer) is
-            variable exp : std_logic_vector(31 downto 0) := std_logic_vector(to_signed(expected, 32));
+        procedure fail(msg : string) is
         begin
-            instr   <= i;
-            imm_src <= src;
-            wait for 1 ns;
-            cnt := cnt + 1;
-            if imm_ext /= exp then
-                if err < 20 then
-                    report "FAIL " & name & " instr=0x" & to_hstring(i) & " src=" & to_string(src)
-                        & " got=0x" & to_hstring(imm_ext) & " expected=0x" & to_hstring(exp)
-                        & " (" & integer'image(expected) & ")" severity error;
-                end if;
-                err := err + 1;
+            errors := errors + 1;
+            if errors <= 30 then
+                report msg severity error;
             end if;
         end procedure;
+
+        procedure check(fmt : string; src : std_logic_vector(2 downto 0); iv, ev : std_logic_vector(31 downto 0); imm : integer) is
+        begin
+            instr   <= iv;
+            imm_src <= src;
+            wait for 1 ns;
+            checks := checks + 1;
+            if imm_ext /= ev then
+                fail(fmt & " imm=" & integer'image(imm) & " instr=0x" & to_hstring(iv) & " got=0x" & to_hstring(imm_ext) &
+                     " expected=0x" & to_hstring(ev));
+            end if;
+        end procedure;
+
+        function fill_pattern(k : natural; rw : std_logic_vector(31 downto 0)) return std_logic_vector is
+        begin
+            case k is
+                when 0      => return x"00000000";
+                when 1      => return x"FFFFFFFF";
+                when others => return rw;
+            end case;
+        end function;
     begin
-        check("I addi 5",       x"00500093", "000", 5);
-        check("I addi -1",      x"FFF00393", "000", -1);
-        check("I max",          x"7FF00093", "000", 2047);
-        check("I min",          x"80000093", "000", -2048);
-        check("S sw 0",         x"00112023", "001", 0);
-        check("S sw -4",        x"FE112E23", "001", -4);
-        check("B beq +8",       x"00208463", "010", 8);
-        check("B beq -8",       x"FE000CE3", "010", -8);
-        check("B beq +4094",    x"7E000FE3", "010", 4094);
-        check("B beq -4096",    x"80000063", "010", -4096);
+        for k in 0 to FILLS + 1 loop
+            for imm in -2048 to 2047 loop
+                fill := fill_pattern(k, rnd_word);
+                u12  := std_logic_vector(to_signed(imm, 12));
+                exp  := std_logic_vector(to_signed(imm, 32));
 
-        for imm in -2048 to 2047 loop
-            check("I all zero",  enc_i(imm, x"00000000"), "000", imm);
-            check("I all ones",  enc_i(imm, x"FFFFFFFF"), "000", imm);
-            other := rand_word;
-            check("I random",    enc_i(imm, other), "000", imm);
+                v := u12 & fill(19 downto 0);
+                check("I", "000", v, exp, imm);
+
+                v := u12(11 downto 5) & fill(24 downto 12) & u12(4 downto 0) & fill(6 downto 0);
+                check("S", "001", v, exp, imm);
+
+                u13 := std_logic_vector(to_signed(2 * imm, 13));
+                exp := std_logic_vector(to_signed(2 * imm, 32));
+                v := u13(12) & u13(10 downto 5) & fill(24 downto 12) & u13(4 downto 1) & u13(11) & fill(6 downto 0);
+                check("B", "010", v, exp, 2 * imm);
+            end loop;
         end loop;
 
-        for imm in -2048 to 2047 loop
-            check("S all zero",  enc_s(imm, x"00000000"), "001", imm);
-            check("S all ones",  enc_s(imm, x"FFFFFFFF"), "001", imm);
-            other := rand_word;
-            check("S random",    enc_s(imm, other), "001", imm);
-        end loop;
+        check("I", "000", x"80000013", x"FFFFF800", -2048);
+        check("I", "000", x"7FF00013", x"000007FF", 2047);
+        check("I", "000", x"FFF00013", x"FFFFFFFF", -1);
+        check("S", "001", x"FE000FA3", x"FFFFFFFF", -1);
+        check("S", "001", x"7E000FA3", x"000007FF", 2047);
+        check("S", "001", x"80000023", x"FFFFF800", -2048);
+        check("B", "010", x"FE000FE3", x"FFFFFFFE", -2);
+        check("B", "010", x"7E000FE3", x"00000FFE", 4094);
+        check("B", "010", x"80000063", x"FFFFF000", -4096);
+        check("B", "010", x"000000E3", x"00000800", 2048);
+        check("B", "010", x"00000463", x"00000008", 8);
 
-        for k in -2048 to 2047 loop
-            check("B all zero",  enc_b(2 * k, x"00000000"), "010", 2 * k);
-            check("B all ones",  enc_b(2 * k, x"FFFFFFFF"), "010", 2 * k);
-            other := rand_word;
-            check("B random",    enc_b(2 * k, other), "010", 2 * k);
-        end loop;
-
-        for n in 1 to 100 loop
-            check("src 101",     rand_word, "101", 0);
-            check("src 110",     rand_word, "110", 0);
-            check("src 111",     rand_word, "111", 0);
-        end loop;
-
-        if err = 0 then
-            report "tb_extend: ALL " & integer'image(cnt) & " TESTS PASSED" severity note;
+        if CHECK_UNUSED_ZERO then
+            for src in 3 to 7 loop
+                for n in 1 to 2000 loop
+                    v := rnd_word;
+                    if n = 1 then
+                        v := x"FFFFFFFF";
+                    end if;
+                    check("unused " & integer'image(src), std_logic_vector(to_unsigned(src, 3)), v, x"00000000", 0);
+                end loop;
+            end loop;
         else
-            report "tb_extend: " & integer'image(err) & " / " & integer'image(cnt) & " FAILED" severity failure;
+            for src in 3 to 7 loop
+                for n in 1 to 100 loop
+                    instr   <= rnd_word;
+                    imm_src <= std_logic_vector(to_unsigned(src, 3));
+                    wait for 1 ns;
+                    checks := checks + 1;
+                    if is_x(imm_ext) then
+                        fail("undefined imm_ext for imm_src=" & integer'image(src));
+                    end if;
+                end loop;
+            end loop;
         end if;
+
+        report "tb_extend: " & integer'image(checks) & " checks, " & integer'image(errors) & " errors";
+        assert errors = 0 report "tb_extend FAILED" severity failure;
+        report "tb_extend PASSED";
         std.env.finish;
     end process;
 end architecture sim;

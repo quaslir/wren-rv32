@@ -32,3 +32,5 @@ quartus/*.smsg
 quartus/*.done
 quartus/PLLJ_PLLSPE_INFO.txt
 quartus/c5_pin_model_dump.txt
+
+!tb/data/*.hex

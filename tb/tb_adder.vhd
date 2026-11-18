@@ -1,68 +1,107 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity tb_adder is
 end entity tb_adder;
 
 architecture sim of tb_adder is
-    signal a_32, b_32, y_32 : std_logic_vector(31 downto 0);
-    signal a_4, b_4, y_4    : std_logic_vector(3 downto 0);
+    signal a_w, b_w, y_w : std_logic_vector(31 downto 0);
+    signal a_n, b_n, y_n : std_logic_vector(5 downto 0);
 begin
+    dut_w : entity work.adder
+        generic map(WIDTH => 32)
+        port map(a => a_w, b => b_w, y => y_w);
 
-    dut32 : entity work.adder
-        generic map (WIDTH => 32)
-        port map (a => a_32, b => b_32, y => y_32);
-
-    dut4 : entity work.adder
-        generic map (WIDTH => 4)
-        port map (a => a_4, b => b_4, y => y_4);
+    dut_n : entity work.adder
+        generic map(WIDTH => 6)
+        port map(a => a_n, b => b_n, y => y_n);
 
     stim : process
-        variable errors   : natural := 0;
-        variable expected : std_logic_vector(3 downto 0);
+        type word_arr_t is array (natural range <>) of std_logic_vector(31 downto 0);
+        constant EDGE : word_arr_t := (
+            x"00000000", x"00000001", x"00000004", x"7FFFFFFF", x"80000000", x"80000001",
+            x"FFFFFFFF", x"FFFFFFFC", x"0000FFFF", x"FFFF0000", x"55555555", x"AAAAAAAA"
+        );
+        variable errors : natural := 0;
+        variable checks : natural := 0;
+        variable s1     : positive := 21;
+        variable s2     : positive := 34;
+        variable r      : real;
+        variable x, y   : std_logic_vector(31 downto 0);
 
-        procedure check32 (va, vb, exp : std_logic_vector(31 downto 0);
-                           msg         : string) is
+        impure function rnd_word return std_logic_vector is
+            variable w : std_logic_vector(31 downto 0);
         begin
-            a_32 <= va;
-            b_32 <= vb;
-            wait for 10 ns;
-            if y_32 /= exp then
-                errors := errors + 1;
-                report msg & ": " & to_hstring(va) & " + " & to_hstring(vb) &
-                       " expected " & to_hstring(exp) &
-                       ", got " & to_hstring(y_32) severity error;
+            for i in 0 to 3 loop
+                uniform(s1, s2, r);
+                w(8 * i + 7 downto 8 * i) := std_logic_vector(to_unsigned(integer(trunc(r * 256.0)) mod 256, 8));
+            end loop;
+            return w;
+        end function;
+
+        function ripple(p, q : std_logic_vector(31 downto 0)) return std_logic_vector is
+            variable s : std_logic_vector(31 downto 0);
+            variable c : std_logic := '0';
+        begin
+            for i in 0 to 31 loop
+                s(i) := p(i) xor q(i) xor c;
+                c    := (p(i) and q(i)) or (c and (p(i) xor q(i)));
+            end loop;
+            return s;
+        end function;
+
+        procedure fail(msg : string) is
+        begin
+            errors := errors + 1;
+            if errors <= 30 then
+                report msg severity error;
             end if;
         end procedure;
 
+        procedure check_w(p, q : std_logic_vector(31 downto 0)) is
+        begin
+            a_w <= p;
+            b_w <= q;
+            wait for 1 ns;
+            checks := checks + 1;
+            if y_w /= ripple(p, q) then
+                fail("WIDTH=32 0x" & to_hstring(p) & " + 0x" & to_hstring(q) & " got=0x" & to_hstring(y_w) &
+                     " expected=0x" & to_hstring(ripple(p, q)));
+            end if;
+        end procedure;
     begin
-        check32(x"00000000", x"00000004", x"00000004", "0 + 4");
-        check32(x"00000008", x"00000004", x"0000000C", "8 + 4");
-        check32(x"0000FFFC", x"00000004", x"00010000", "carry into upper half");
-        check32(x"FFFFFFFC", x"00000004", x"00000000", "wrap-around");
-        check32(x"12345678", x"87654321", x"99999999", "arbitrary");
-        check32(x"00000010", x"FFFFFFF8", x"00000008", "16 + (-8)");
+        for i in EDGE'range loop
+            for j in EDGE'range loop
+                check_w(EDGE(i), EDGE(j));
+            end loop;
+        end loop;
+        for i in 0 to 31 loop
+            check_w(std_logic_vector(shift_left(to_unsigned(1, 32), i)), std_logic_vector(shift_left(to_unsigned(1, 32), i)));
+            check_w(x"FFFFFFFF", std_logic_vector(shift_left(to_unsigned(1, 32), i)));
+        end loop;
+        for n in 1 to 5000 loop
+            x := rnd_word;
+            y := rnd_word;
+            check_w(x, y);
+        end loop;
 
-        for i in 0 to 15 loop
-            for j in 0 to 15 loop
-                a_4 <= std_logic_vector(to_unsigned(i, 4));
-                b_4 <= std_logic_vector(to_unsigned(j, 4));
-                wait for 10 ns;
-
-                expected := std_logic_vector(to_unsigned((i + j) mod 16, 4));
-
-                if y_4 /= expected then
-                    errors := errors + 1;
-                    report "4-bit " & integer'image(i) & " + " & integer'image(j) &
-                           " expected " & to_string(expected) &
-                           ", got " & to_string(y_4) severity error;
+        for p in 0 to 63 loop
+            for q in 0 to 63 loop
+                a_n <= std_logic_vector(to_unsigned(p, 6));
+                b_n <= std_logic_vector(to_unsigned(q, 6));
+                wait for 1 ns;
+                checks := checks + 1;
+                if to_integer(unsigned(y_n)) /= (p + q) mod 64 then
+                    fail("WIDTH=6 " & integer'image(p) & " + " & integer'image(q) & " got=" & to_string(y_n));
                 end if;
             end loop;
         end loop;
 
-        report "Test finished, errors: " & integer'image(errors);
+        report "tb_adder: " & integer'image(checks) & " checks, " & integer'image(errors) & " errors";
+        assert errors = 0 report "tb_adder FAILED" severity failure;
+        report "tb_adder PASSED";
         std.env.finish;
     end process;
-
 end architecture sim;

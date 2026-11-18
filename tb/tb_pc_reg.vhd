@@ -1,91 +1,154 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 entity tb_pc_reg is
+    generic(
+        N_RANDOM : natural := 3000
+    );
 end entity tb_pc_reg;
 
 architecture sim of tb_pc_reg is
     constant T : time := 10 ns;
 
-    signal clk     : std_logic := '0';
-    signal rst     : std_logic := '1';
-    signal next_pc : std_logic_vector(31 downto 0) := (others => '0');
-    signal pc      : std_logic_vector(31 downto 0);
-    signal done    : boolean := false;
+    signal clk       : std_logic := '0';
+    signal rst       : std_logic := '1';
+    signal next_pc   : std_logic_vector(31 downto 0) := (others => '0');
+    signal pc        : std_logic_vector(31 downto 0);
+    signal next_pc_n : std_logic_vector(7 downto 0) := (others => '0');
+    signal pc_n      : std_logic_vector(7 downto 0);
+    signal done      : boolean := false;
 begin
+    clk <= not clk after T / 2 when not done else '0';
 
-    dut : entity work.pc_reg
-        port map (
-            clk     => clk,
-            rst     => rst,
-            next_pc => next_pc,
-            pc      => pc
-        );
+    dut_w : entity work.pc_reg
+        generic map(WIDTH => 32)
+        port map(clk => clk, rst => rst, next_pc => next_pc, pc => pc);
 
-    clk_gen : process
-    begin
-        while not done loop
-            clk <= '0'; wait for T / 2;
-            clk <= '1'; wait for T / 2;
-        end loop;
-        wait;
-    end process;
+    dut_n : entity work.pc_reg
+        generic map(WIDTH => 8)
+        port map(clk => clk, rst => rst, next_pc => next_pc_n, pc => pc_n);
 
     stim : process
-        variable errors : natural := 0;
+        variable errors  : natural := 0;
+        variable checks  : natural := 0;
+        variable s1      : positive := 77;
+        variable s2      : positive := 88;
+        variable r       : real;
+        variable model   : std_logic_vector(31 downto 0) := (others => '0');
+        variable model_n : std_logic_vector(7 downto 0) := (others => '0');
+        variable w       : std_logic_vector(31 downto 0);
+        variable do_rst  : boolean;
+        variable n_rst   : natural := 0;
 
-        procedure check (expected : std_logic_vector(31 downto 0);
-                         msg      : string) is
+        impure function rnd(n : positive) return natural is
         begin
-            if pc /= expected then
-                errors := errors + 1;
-                report msg & ": expected " & to_hstring(expected) &
-                       ", got " & to_hstring(pc) severity error;
+            uniform(s1, s2, r);
+            return integer(trunc(r * real(n))) mod n;
+        end function;
+
+        impure function rnd_word return std_logic_vector is
+            variable v : std_logic_vector(31 downto 0);
+        begin
+            for i in 0 to 3 loop
+                v(8 * i + 7 downto 8 * i) := std_logic_vector(to_unsigned(rnd(256), 8));
+            end loop;
+            return v;
+        end function;
+
+        procedure fail(msg : string) is
+        begin
+            errors := errors + 1;
+            if errors <= 30 then
+                report "@" & time'image(now) & ": " & msg severity error;
             end if;
         end procedure;
 
-        procedure step (rst_val  : std_logic;
-                        next_val : std_logic_vector(31 downto 0);
-                        expected : std_logic_vector(31 downto 0);
-                        msg      : string) is
+        procedure expect(tag : string) is
         begin
-            wait until falling_edge(clk);
-            rst     <= rst_val;
-            next_pc <= next_val;
-            wait until rising_edge(clk);
-            wait for 1 ns;
-            check(expected, msg);
+            checks := checks + 1;
+            if pc /= model then
+                fail(tag & " WIDTH=32 pc=0x" & to_hstring(pc) & " expected=0x" & to_hstring(model));
+            end if;
+            checks := checks + 1;
+            if pc_n /= model_n then
+                fail(tag & " WIDTH=8 pc=0x" & to_hstring(pc_n) & " expected=0x" & to_hstring(model_n));
+            end if;
         end procedure;
 
+        procedure cycle(nv : std_logic_vector(31 downto 0); rv : std_logic; tag : string) is
+        begin
+            wait until falling_edge(clk);
+            next_pc   <= nv;
+            next_pc_n <= nv(7 downto 0);
+            rst       <= rv;
+            wait for T / 4;
+            expect(tag & " before edge");
+            wait until rising_edge(clk);
+            wait for 1 ns;
+            if rv = '1' then
+                model   := (others => '0');
+                model_n := (others => '0');
+            else
+                model   := nv;
+                model_n := nv(7 downto 0);
+            end if;
+            expect(tag & " after edge");
+            wait for T / 4;
+            expect(tag & " mid cycle");
+        end procedure;
     begin
-        step('1', x"00000000", x"00000000", "reset");
-        step('1', x"00000040", x"00000000", "reset ignores next_pc");
-
-        step('0', x"00000004", x"00000004", "load 4");
-
-        wait until falling_edge(clk);
-        next_pc <= x"00000008";
-        wait for 1 ns;
-        check(x"00000004", "hold: next_pc changed, pc must wait for edge");
+        rst <= '1';
+        next_pc <= x"DEADBEEF";
+        next_pc_n <= x"EF";
+        wait until rising_edge(clk);
         wait until rising_edge(clk);
         wait for 1 ns;
-        check(x"00000008", "load 8 on edge");
+        expect("reset");
 
-        step('0', x"0000000C", x"0000000C", "load 12");
-        step('0', x"12345678", x"12345678", "load arbitrary value");
-        step('0', x"FFFFFFFC", x"FFFFFFFC", "load max aligned address");
+        cycle(x"00000004", '0', "first step");
+        cycle(x"FFFFFFFF", '0', "all ones");
+        cycle(x"FFFFFFFF", '1', "reset priority over next_pc");
+        cycle(x"80000000", '0', "msb");
+        cycle(x"00000000", '0', "zero");
+        cycle(x"12345678", '0', "pattern");
 
         wait until falling_edge(clk);
         rst <= '1';
+        next_pc <= x"CAFEBABE";
+        next_pc_n <= x"BE";
         wait for 1 ns;
-        check(x"FFFFFFFC", "sync reset: pc must wait for edge");
+        expect("sync reset: no change before edge");
+        wait until rising_edge(clk);
+        wait for 1 ns;
+        model := (others => '0');
+        model_n := (others => '0');
+        expect("sync reset: zero after edge");
+        wait until falling_edge(clk);
+        rst <= '0';
+        wait until rising_edge(clk);
+        wait for 1 ns;
+        model := x"CAFEBABE";
+        model_n := x"BE";
+        expect("release reset");
 
-        step('1', x"00000010", x"00000000", "reset in the middle");
-        step('0', x"00000010", x"00000010", "run after reset");
+        for n in 1 to N_RANDOM loop
+            w := rnd_word;
+            do_rst := rnd(20) = 0;
+            if do_rst then
+                n_rst := n_rst + 1;
+                cycle(w, '1', "random reset");
+            else
+                cycle(w, '0', "random");
+            end if;
+        end loop;
 
-        report "Test finished, errors: " & integer'image(errors);
+        report "tb_pc_reg: " & integer'image(checks) & " checks, " & integer'image(n_rst) & " random resets, " &
+               integer'image(errors) & " errors";
+        assert errors = 0 report "tb_pc_reg FAILED" severity failure;
+        report "tb_pc_reg PASSED";
         done <= true;
         std.env.finish;
     end process;
-
 end architecture sim;
