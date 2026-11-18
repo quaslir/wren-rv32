@@ -37,13 +37,16 @@ architecture synth of datapath is
     alias rd  : std_logic_vector(4 downto 0) is instr(11 downto 7);
 
     signal result: std_logic_vector(31 downto 0) := (others => '0');
+
+    signal pc_int: std_logic_vector(31 downto 0) := (others => '0');
+    signal alu_result_int: std_logic_vector(31 downto 0) := (others => '0');
 begin
     alu_inst : entity work.alu
         port map(
             a           => rd1,
             b           => mux_y,
             alu_control => alu_op,
-            result      => alu_result,
+            result      => alu_result_int,
             zero        => zero
         );
 
@@ -52,7 +55,7 @@ begin
             WIDTH => 32
         )
         port map(
-            a => pc,
+            a => pc_int,
             b => PC_STEP,
             y => pc_plus4
         );
@@ -65,7 +68,7 @@ begin
             clk     => clk,
             rst     => rst,
             next_pc => pc_next,
-            pc      => pc
+            pc      => pc_int
         );
 
     PCTarget : entity work.adder
@@ -73,7 +76,7 @@ begin
             WIDTH => 32
         )
         port map(
-            a => pc,
+            a => pc_int,
             b => imm_ext,
             y => pc_target
         );
@@ -124,7 +127,7 @@ begin
                 WIDTH => 32
             )
             port map(
-                d0  => alu_result,
+                d0  => alu_result_int,
                 d1  => read_data,
                 d2  => pc_plus4,
                 d3  => imm_ext,
@@ -135,4 +138,6 @@ begin
 
         
 write_data <= rd2;
+pc <= pc_int;
+alu_result <= alu_result_int;
 end architecture synth;

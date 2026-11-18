@@ -16,3 +16,19 @@ e~*.o
 
 # Keep committed program images used by testbenches
 !sw/*.hex
+
+quartus/db/
+quartus/incremental_db/
+quartus/output_files/
+quartus/simulation/
+quartus/greybox_tmp/
+quartus/hc_output/
+quartus/*.qws
+quartus/*.bak
+quartus/*.qarlog
+quartus/*_description.txt
+quartus/*.chg
+quartus/*.smsg
+quartus/*.done
+quartus/PLLJ_PLLSPE_INFO.txt
+quartus/c5_pin_model_dump.txt

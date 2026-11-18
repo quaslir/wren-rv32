@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use std.textio.all;
-
+use ieee.std_logic_textio.all;
 entity instr_mem is
     generic(
     INIT_FILE: string;
@@ -27,21 +27,24 @@ type rom_t is array(0 to DEPTH - 1) of std_logic_vector(31 downto 0);
             variable line_buffer : line;
             variable word : std_logic_vector(31 downto 0) := (others => '0');
             variable instructions: rom_t := (others => x"00000000");
-            variable index: integer range 0 to DEPTH;
+            variable index : integer := 0;
             
     begin
         
-       while not endfile(instr_file) and index < DEPTH loop
+        for i in 0 to 4 * DEPTH - 1 loop
+        if endfile(instr_file) then
+            exit;
+        end if;
+        if index = DEPTH then
+            exit;
+        end if;
         readline(instr_file, line_buffer);
         if line_buffer'length /= 0 then 
         hread(line_buffer, word);
         instructions(index) := word;
-                index := index + 1;
+        index := index + 1;
         end if;
-       end loop;
-       
-
-
+        end loop;
 
         return instructions;
     end function readfile;
