@@ -20,6 +20,7 @@ architecture synth of cpu is
     signal write_data: std_logic_vector(31 downto 0) := (others => '0');
     signal read_data: std_logic_vector(31 downto 0) := (others => '0');
     signal be : std_logic_vector(3 downto 0) := (others => '0');
+    signal out_open: std_logic := '0';
 begin
 
 
@@ -35,7 +36,8 @@ core_inst : entity work.core
         pc         => pc,
         mem_write  => mem_write,
         write_data => write_data,
-        be => be
+        be => be,
+        misaligned => out_open
     );
 
     instr_mem_inst : entity work.instr_mem
@@ -57,7 +59,8 @@ core_inst : entity work.core
                 we   => mem_write,
                 addr => alu_result,
                 wd   => write_data,
-                rd   => read_data
+                rd   => read_data,
+                be => be
             );
         
 

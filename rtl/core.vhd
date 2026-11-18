@@ -12,7 +12,8 @@ entity core is
         pc: out std_logic_vector(31 downto 0);
         mem_write: out std_logic;
         write_data: out std_logic_vector(31 downto 0);
-        be : out std_logic_vector(3 downto 0)
+        be : out std_logic_vector(3 downto 0);
+        misaligned: out std_logic
     );
 end entity core;
 
@@ -31,15 +32,17 @@ architecture synth of core is
 begin
 controller_inst : entity work.controller
     port map(
-        instr     => instr,
-        zero      => zero,
-        reg_write => reg_write,
-        alu_src   => alu_src,
-        illegal   => illegal,
-        pc_src    => pc_src,
-        alu_op    => alu_op,
-        imm_src   => imm_src,
-        mem_write => mem_write,
+        instr      => instr,
+        zero       => zero,
+        addr_lo    => alu_result_int(1 downto 0),
+        reg_write  => reg_write,
+        alu_src    => alu_src,
+        illegal    => illegal,
+        pc_src     => pc_src,
+        misaligned => misaligned,
+        alu_op     => alu_op,
+        imm_src    => imm_src,
+        mem_write  => mem_write,
         result_src => result_src
     );
 

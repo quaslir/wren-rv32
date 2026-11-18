@@ -13,6 +13,8 @@ end entity tb_controller;
 architecture sim of tb_controller is
     signal instr      : std_logic_vector(31 downto 0) := (others => '0');
     signal zero       : std_logic := '0';
+    signal addr_lo    : std_logic_vector(1 downto 0) := "00";
+    signal misaligned : std_logic;
     signal reg_write  : std_logic;
     signal alu_src    : std_logic;
     signal illegal    : std_logic;
@@ -121,6 +123,18 @@ architecture sim of tb_controller is
         end case;
     end function;
 
+    function ref_mis(v : std_logic_vector(31 downto 0); a : std_logic_vector(1 downto 0)) return std_logic is
+    begin
+        if ref_ctrl(v).mem_access /= '1' then
+            return '0';
+        end if;
+        case v(13 downto 12) is
+            when "01"   => return a(0);
+            when "10"   => return a(1) or a(0);
+            when others => return '0';
+        end case;
+    end function;
+
     function std_match_v(got, exp : std_logic_vector) return boolean is
     begin
         for i in got'range loop
@@ -135,6 +149,8 @@ begin
         port map(
             instr      => instr,
             zero       => zero,
+            addr_lo    => addr_lo,
+            misaligned => misaligned,
             reg_write  => reg_write,
             alu_src    => alu_src,
             illegal    => illegal,
@@ -150,6 +166,7 @@ begin
         variable checks  : natural := 0;
         variable n_taken : natural := 0;
         variable n_br    : natural := 0;
+        variable n_mis   : natural := 0;
         variable s1      : positive := SEED1;
         variable s2      : positive := SEED2;
         variable r       : real;
@@ -167,7 +184,8 @@ begin
         begin
             errors := errors + 1;
             if errors <= 30 then
-                report "instr=0x" & to_hstring(instr) & " zero=" & std_logic'image(zero) & ": " & msg severity error;
+                report "instr=0x" & to_hstring(instr) & " zero=" & std_logic'image(zero) &
+                       " addr_lo=" & to_string(addr_lo) & ": " & msg severity error;
             end if;
         end procedure;
 
@@ -188,13 +206,19 @@ begin
         end procedure;
 
         procedure check_all is
+            variable m : std_logic;
         begin
             c := ref_ctrl(instr);
             t := ref_taken(instr, zero);
+            m := ref_mis(instr, addr_lo);
             chk1("pc_src", pc_src, t);
-            chk1("reg_write", reg_write, c.reg_write);
+            chk1("misaligned", misaligned, m);
+            chk1("reg_write", reg_write, c.reg_write and not m);
             chk1("illegal", illegal, c.illegal);
-            chk1("mem_write", mem_write, c.mem_write);
+            chk1("mem_write", mem_write, c.mem_write and not m);
+            if m = '1' then
+                n_mis := n_mis + 1;
+            end if;
             if c.c_alu_src then
                 chk1("alu_src", alu_src, c.alu_src);
             end if;
@@ -208,7 +232,7 @@ begin
                 chkv("result_src", result_src, c.result_src);
             end if;
             checks := checks + 1;
-            if is_x(reg_write & alu_src & illegal & pc_src & alu_op & imm_src & mem_write & result_src) then
+            if is_x(reg_write & alu_src & illegal & pc_src & alu_op & imm_src & mem_write & result_src & misaligned) then
                 fail("undefined output");
             end if;
             if c.branch = '1' then
@@ -235,7 +259,59 @@ begin
             ("010", '0', '0'),
             ("011", '0', '0')
         );
+        type mis_t is record
+            name : string(1 to 12);
+            v    : std_logic_vector(31 downto 0);
+            a    : std_logic_vector(1 downto 0);
+            mis  : std_logic;
+            rw   : std_logic;
+            mw   : std_logic;
+        end record;
+        type mis_arr_t is array (natural range <>) of mis_t;
+        constant MIS_TABLE : mis_arr_t := (
+            ("lb  @01     ", x"00010083", "01", '0', '1', '0'),
+            ("lb  @11     ", x"00010083", "11", '0', '1', '0'),
+            ("lbu @11     ", x"00014083", "11", '0', '1', '0'),
+            ("lh  @00     ", x"00011083", "00", '0', '1', '0'),
+            ("lh  @10     ", x"00011083", "10", '0', '1', '0'),
+            ("lh  @01     ", x"00011083", "01", '1', '0', '0'),
+            ("lh  @11     ", x"00011083", "11", '1', '0', '0'),
+            ("lhu @10     ", x"00015083", "10", '0', '1', '0'),
+            ("lhu @01     ", x"00015083", "01", '1', '0', '0'),
+            ("lw  @00     ", x"00012083", "00", '0', '1', '0'),
+            ("lw  @01     ", x"00012083", "01", '1', '0', '0'),
+            ("lw  @10     ", x"00012083", "10", '1', '0', '0'),
+            ("lw  @11     ", x"00012083", "11", '1', '0', '0'),
+            ("sb  @11     ", x"00310023", "11", '0', '0', '1'),
+            ("sh  @10     ", x"00311023", "10", '0', '0', '1'),
+            ("sh  @01     ", x"00311023", "01", '1', '0', '0'),
+            ("sw  @00     ", x"00312023", "00", '0', '0', '1'),
+            ("sw  @10     ", x"00312023", "10", '1', '0', '0'),
+            ("sll odd     ", x"003110B3", "01", '0', '1', '0'),
+            ("slt @10     ", x"003120B3", "10", '0', '1', '0'),
+            ("slli odd    ", x"00111093", "11", '0', '1', '0'),
+            ("sltiu @01   ", x"00113093", "01", '0', '1', '0'),
+            ("bne @01     ", x"00311463", "01", '0', '0', '0'),
+            ("blt @10     ", x"00314463", "10", '0', '0', '0'),
+            ("load 011 @1 ", x"00013083", "01", '0', '0', '0'),
+            ("store 011 @1", x"00313023", "01", '0', '0', '0')
+        );
     begin
+        for k in MIS_TABLE'range loop
+            instr   <= MIS_TABLE(k).v;
+            addr_lo <= MIS_TABLE(k).a;
+            zero    <= '0';
+            wait for 1 ns;
+            checks := checks + 1;
+            if misaligned /= MIS_TABLE(k).mis or reg_write /= MIS_TABLE(k).rw or mem_write /= MIS_TABLE(k).mw then
+                fail(MIS_TABLE(k).name & ": misaligned=" & std_logic'image(misaligned) &
+                     " reg_write=" & std_logic'image(reg_write) & " mem_write=" & std_logic'image(mem_write) &
+                     " expected " & std_logic'image(MIS_TABLE(k).mis) & " " & std_logic'image(MIS_TABLE(k).rw) &
+                     " " & std_logic'image(MIS_TABLE(k).mw));
+            end if;
+        end loop;
+        addr_lo <= "00";
+
         for k in BR_TABLE'range loop
             for z in 0 to 1 loop
                 instr <= "0000000" & "00011" & "00010" & BR_TABLE(k).f3 & "01000" & OP_B;
@@ -259,18 +335,22 @@ begin
                          std_logic_vector(to_unsigned(f3, 3)) & rnd5 &
                          std_logic_vector(to_unsigned(op, 7));
                     instr <= v;
-                    zero  <= '0';
-                    wait for 1 ns;
-                    check_all;
-                    zero <= '1';
-                    wait for 1 ns;
-                    check_all;
+                    for a in 0 to 3 loop
+                        addr_lo <= std_logic_vector(to_unsigned(a, 2));
+                        zero    <= '0';
+                        wait for 1 ns;
+                        check_all;
+                        zero <= '1';
+                        wait for 1 ns;
+                        check_all;
+                    end loop;
                 end loop;
             end loop;
         end loop;
 
         report "tb_controller: " & integer'image(checks) & " checks, " & integer'image(n_br) &
-               " branch vectors (" & integer'image(n_taken) & " taken), " & integer'image(errors) & " errors";
+               " branch vectors (" & integer'image(n_taken) & " taken), " & integer'image(n_mis) &
+               " misaligned, " & integer'image(errors) & " errors";
         assert errors = 0 report "tb_controller FAILED" severity failure;
         report "tb_controller PASSED";
         std.env.finish;

@@ -25,6 +25,7 @@ architecture sim of tb_core is
     signal mem_write  : std_logic;
     signal write_data : std_logic_vector(31 downto 0);
     signal be         : std_logic_vector(3 downto 0);
+    signal misaligned : std_logic;
     signal done       : boolean := false;
 
     type regs_t is array (0 to 31) of std_logic_vector(31 downto 0);
@@ -162,7 +163,8 @@ begin
             read_data  => read_data,
             mem_write  => mem_write,
             write_data => write_data,
-            be         => be
+            be         => be,
+            misaligned => misaligned
         );
 
     read_data <= dmem(word_of(alu_result)) when word_of(alu_result) < MEM_DEPTH else (others => '0');
@@ -179,6 +181,8 @@ begin
         variable n_r, n_i, n_b, n_taken, n_ill, n_lw, n_sw, n_sw_mis : natural := 0;
         variable exp_be      : std_logic_vector(3 downto 0);
         variable lanes       : std_logic_vector(31 downto 0);
+        variable mis         : boolean;
+        variable n_ld_mis    : natural := 0;
         variable n_ld        : cnt8_t := (others => 0);
         variable n_st        : cnt8_t := (others => 0);
         variable mem         : mem_t := (others => (others => '0'));
@@ -246,6 +250,7 @@ begin
             taken  := false;
             loads  := false;
             stores := false;
+            mis    := false;
             exp    := (others => '0');
 
             if opcode = OP_R then
@@ -308,6 +313,23 @@ begin
                 exp    := ref_alu(regs(rs1), imm, "0000");
             end if;
 
+            if loads or stores then
+                case f3(1 downto 0) is
+                    when "01"   => mis := exp(0) = '1';
+                    when "10"   => mis := exp(1 downto 0) /= "00";
+                    when others => mis := false;
+                end case;
+                if mis and loads then
+                    writes := false;
+                    n_ld_mis := n_ld_mis + 1;
+                end if;
+            end if;
+            if mis and misaligned /= '1' then
+                fail("misaligned=0 for misaligned access");
+            elsif not mis and misaligned /= '0' then
+                fail("misaligned=" & std_logic'image(misaligned) & ", expected '0'");
+            end if;
+
             if pc /= std_logic_vector(m_pc) then
                 fail("pc got=0x" & to_hstring(pc) & " expected=0x" & to_hstring(m_pc));
             end if;
@@ -343,8 +365,10 @@ begin
                 end if;
                 n_ill := n_ill + 1;
             end if;
-            if stores and mem_write /= '1' then
+            if stores and not mis and mem_write /= '1' then
                 fail("store: mem_write=" & std_logic'image(mem_write) & ", expected '1'");
+            elsif stores and mis and mem_write /= '0' then
+                fail("misaligned store: mem_write=" & std_logic'image(mem_write) & ", expected '0'");
             elsif not stores and mem_write /= '0' then
                 fail("non-store: mem_write=" & std_logic'image(mem_write) & ", expected '0'");
             end if;
@@ -538,7 +562,7 @@ begin
             & " (lb " & integer'image(n_ld(0)) & ", lh " & integer'image(n_ld(1)) & ", lw " & integer'image(n_ld(2))
             & ", lbu " & integer'image(n_ld(4)) & ", lhu " & integer'image(n_ld(5)) & "), store " & integer'image(n_sw)
             & " (sb " & integer'image(n_st(0)) & ", sh " & integer'image(n_st(1)) & ", sw " & integer'image(n_st(2))
-            & ", misaligned " & integer'image(n_sw_mis) & "), illegal " & integer'image(n_ill) severity note;
+            & ", misaligned " & integer'image(n_sw_mis) & "), misaligned loads " & integer'image(n_ld_mis) & ", illegal " & integer'image(n_ill) severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else
