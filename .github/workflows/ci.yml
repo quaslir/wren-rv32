@@ -18,10 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install GHDL from apt
+      - name: Install GHDL and RISC-V toolchain from apt
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ghdl
+          sudo apt-get install -y gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf
 
       - name: Fall back to official GHDL release if apt version < 4.0
         run: |
@@ -35,18 +36,41 @@ jobs:
             echo "$HOME/ghdl/bin" >> "$GITHUB_PATH"
           fi
 
-      - name: GHDL version
-        run: ghdl --version
+      - name: Tool versions
+        run: |
+          ghdl --version
+          riscv64-unknown-elf-gcc --version | head -1
+          riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -print-libgcc-file-name
 
       - name: Run testbenches
         run: |
           chmod +x run_tests.sh
           ./run_tests.sh
 
-      - name: Upload logs
+      - name: C program on wren (ctest)
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x ctest.sh
+          CPU_GENERICS="-gIMEM_DEPTH=1024 -gDMEM_DEPTH=1024" ./ctest.sh
+
+      - name: Upload testbench logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ghdl-logs
           path: /tmp/*.log
+          if-no-files-found: warn
+
+      - name: Upload ctest build
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-build
+          path: |
+            build/ctest/*.dis
+            build/ctest/*.hex
+            build/ctest/*.sym
+            build/ctest/*.log
+            build/ctest/start.s
+            build/ctest/link.ld
           if-no-files-found: warn
