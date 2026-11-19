@@ -38,6 +38,8 @@ architecture sim of tb_core is
     constant OP_B    : std_logic_vector(6 downto 0) := "1100011";
     constant OP_L    : std_logic_vector(6 downto 0) := "0000011";
     constant OP_S    : std_logic_vector(6 downto 0) := "0100011";
+    constant OP_J    : std_logic_vector(6 downto 0) := "1101111";
+    constant OP_JR   : std_logic_vector(6 downto 0) := "1100111";
 
     function word_of(a : std_logic_vector(31 downto 0)) return natural is
     begin
@@ -145,6 +147,18 @@ architecture sim of tb_core is
             & f3 & u(4 downto 0) & OP_S;
     end function;
 
+    function enc_j(imm : integer; rd : natural) return std_logic_vector is
+        variable u : std_logic_vector(20 downto 0) := std_logic_vector(to_signed(imm, 21));
+    begin
+        return u(20) & u(10 downto 1) & u(11) & u(19 downto 12) & std_logic_vector(to_unsigned(rd, 5)) & OP_J;
+    end function;
+
+    function enc_jr(imm : integer; rs1 : natural; f3 : std_logic_vector(2 downto 0); rd : natural) return std_logic_vector is
+    begin
+        return std_logic_vector(to_signed(imm, 12)) & std_logic_vector(to_unsigned(rs1, 5)) & f3
+            & std_logic_vector(to_unsigned(rd, 5)) & OP_JR;
+    end function;
+
     function enc_b(imm : integer; rs2, rs1 : natural; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
         variable u : std_logic_vector(12 downto 0) := std_logic_vector(to_signed(imm, 13));
     begin
@@ -198,6 +212,9 @@ begin
         variable legal       : boolean;
         variable writes      : boolean;
         variable taken       : boolean;
+        variable jumps       : boolean;
+        variable target      : std_logic_vector(31 downto 0);
+        variable n_jal, n_jalr, n_odd : natural := 0;
         variable exp         : std_logic_vector(31 downto 0);
         variable kind        : natural;
 
@@ -248,6 +265,7 @@ begin
             legal  := false;
             writes := false;
             taken  := false;
+            jumps  := false;
             loads  := false;
             stores := false;
             mis    := false;
@@ -272,6 +290,28 @@ begin
                     exp   := ref_alu(regs(rs1), imm, '0' & f3);
                 end if;
                 writes := legal;
+            elsif opcode = OP_J then
+                legal  := true;
+                writes := true;
+                jumps  := true;
+                taken  := true;
+                imm    := (31 downto 20 => v(31)) & v(19 downto 12) & v(20) & v(30 downto 21) & '0';
+                target := std_logic_vector(m_pc + unsigned(imm));
+                exp    := std_logic_vector(m_pc + 4);
+                n_jal  := n_jal + 1;
+            elsif opcode = OP_JR and f3 = "000" then
+                legal  := true;
+                writes := true;
+                jumps  := true;
+                taken  := true;
+                imm    := (31 downto 12 => v(31)) & v(31 downto 20);
+                target := std_logic_vector(unsigned(regs(rs1)) + unsigned(imm));
+                if target(0) = '1' then
+                    n_odd := n_odd + 1;
+                end if;
+                target(0) := '0';
+                exp    := std_logic_vector(m_pc + 4);
+                n_jalr := n_jalr + 1;
             elsif opcode = OP_B and f3 /= "010" and f3 /= "011" then
                 legal := true;
                 imm   := (31 downto 12 => v(31)) & v(7) & v(30 downto 25) & v(11 downto 8) & '0';
@@ -337,7 +377,7 @@ begin
                 if illegal /= '0' then
                     fail("illegal=1 for legal instruction");
                 end if;
-                if alu_result /= exp then
+                if not jumps and alu_result /= exp then
                     fail("alu_result got=0x" & to_hstring(alu_result) & " expected=0x" & to_hstring(exp));
                 end if;
                 if stores then
@@ -392,7 +432,9 @@ begin
                 end loop;
                 dmem <= mem;
             end if;
-            if taken then
+            if taken and jumps then
+                m_pc := unsigned(target);
+            elsif taken then
                 m_pc := m_pc + unsigned(imm);
                 n_taken := n_taken + 1;
             else
@@ -527,11 +569,25 @@ begin
                     when others =>
                         v := enc_i(rnd(32) + 1024 * rnd(2), rnd_reg, "101", rnd_reg);
                 end case;
-            elsif kind < 88 then
+            elsif kind < 80 then
                 n_b := n_b + 1;
                 rs1 := rnd_reg;
                 if rnd(2) = 1 then rs2 := rs1; else rs2 := rnd_reg; end if;
                 v := enc_b(2 * (rnd(4096) - 2048), rs2, rs1, B_F3(rnd(6)));
+            elsif kind < 84 then
+                case rnd(4) is
+                    when 0      => v := enc_j(2 * (rnd(1048576) - 524288), rnd_reg);
+                    when 1      => v := enc_j(4 * (rnd(64) - 32), 1);
+                    when 2      => v := enc_j(4 * (rnd(64) - 32), 0);
+                    when others => v := enc_j(2 * (rnd(4096) - 2048), rnd_reg);
+                end case;
+            elsif kind < 88 then
+                case rnd(5) is
+                    when 0      => v := enc_jr(0, 1, "000", 0);
+                    when 1      => rs1 := rnd_reg; v := enc_jr(rnd(4096) - 2048, rs1, "000", rs1);
+                    when 2      => v := enc_jr(rnd(4096) - 2048, rnd_reg, std_logic_vector(to_unsigned(1 + rnd(7), 3)), rnd_reg);
+                    when others => v := enc_jr(rnd(4096) - 2048, rnd_reg, "000", rnd_reg);
+                end case;
             elsif kind < 92 then
                 v := enc_r("0000001", rnd_reg, rnd_reg, std_logic_vector(to_unsigned(rnd(8), 3)), rnd_reg);
             elsif kind < 94 then
@@ -547,7 +603,7 @@ begin
             else
                 v := rnd_word;
                 if v(6 downto 0) = OP_R or v(6 downto 0) = OP_I or v(6 downto 0) = OP_B
-                   or v(6 downto 0) = OP_L or v(6 downto 0) = OP_S then
+                   or v(6 downto 0) = OP_L or v(6 downto 0) = OP_S or v(6 downto 0) = OP_J or v(6 downto 0) = OP_JR then
                     v(6 downto 0) := "0001011";
                 end if;
             end if;
@@ -563,6 +619,7 @@ begin
             & ", lbu " & integer'image(n_ld(4)) & ", lhu " & integer'image(n_ld(5)) & "), store " & integer'image(n_sw)
             & " (sb " & integer'image(n_st(0)) & ", sh " & integer'image(n_st(1)) & ", sw " & integer'image(n_st(2))
             & ", misaligned " & integer'image(n_sw_mis) & "), misaligned loads " & integer'image(n_ld_mis) & ", illegal " & integer'image(n_ill) severity note;
+        report "jal " & integer'image(n_jal) & ", jalr " & integer'image(n_jalr) & " (odd target " & integer'image(n_odd) & ")" severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else

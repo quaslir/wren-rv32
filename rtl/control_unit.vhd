@@ -12,7 +12,9 @@ entity control_unit is
         branch    : out std_logic;
         mem_write: out std_logic;
         result_src: out std_logic_vector(1 downto 0);
-        mem_access: out std_logic
+        mem_access: out std_logic;
+        jump : out std_logic;
+        jalr: out std_logic
     );
 end entity control_unit;
 
@@ -34,6 +36,8 @@ begin
         mem_write <= '0';
         result_src <= "00";
         mem_access <= '0';
+        jalr <= '0';
+        jump <= '0';
         case opcode is
             when "0110011" =>
                 if funct7 = "0000000" then
@@ -118,7 +122,21 @@ begin
                     mem_access <='1';
                     when others => illegal <= '1';
                 end case;
-                
+            when "1101111" => -- jal
+                imm_src <= "011";
+                result_src <= "10";
+                jump <= '1';
+                reg_write <= '1';
+            when "1100111" => -- jalr
+                if funct3 = "000" then
+                jalr <= '1';
+                jump <= '1';
+                result_src <= "10";
+                alu_src <= '1';
+                reg_write <= '1';
+                else 
+                    illegal <= '1';
+                end if;
             when others =>
                 illegal <= '1';
         end case;

@@ -19,6 +19,7 @@ end entity core;
 
 
 architecture synth of core is
+
     signal reg_write : std_logic      := '0';              
     signal alu_op    : std_logic_vector(3 downto 0);
     signal alu_src   : std_logic         :='0';         
@@ -29,6 +30,7 @@ architecture synth of core is
     signal alu_result_int : std_logic_vector(31 downto 0) := (others => '0');
     signal write_data_raw: std_logic_vector(31 downto 0) := (others => '0');
     signal load_data: std_logic_vector(31 downto 0) := (others => '0');
+    signal jalr: std_logic := '0';
 begin
 controller_inst : entity work.controller
     port map(
@@ -43,7 +45,8 @@ controller_inst : entity work.controller
         alu_op     => alu_op,
         imm_src    => imm_src,
         mem_write  => mem_write,
-        result_src => result_src
+        result_src => result_src,
+        jalr => jalr
     );
 
     datapath_inst : entity work.datapath
@@ -61,7 +64,8 @@ controller_inst : entity work.controller
             pc         => pc,
             result_src => result_src,
             read_data  => load_data,
-            write_data => write_data_raw
+            write_data => write_data_raw,
+            jalr => jalr
         );
 store_align_inst : entity work.store_align
     port map(

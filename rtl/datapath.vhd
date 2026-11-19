@@ -12,12 +12,15 @@ entity datapath is
         imm_src   : in  std_logic_vector(2 downto 0);
         alu_op    : in  std_logic_vector(3 downto 0);
         instr     : in  std_logic_vector(31 downto 0);
+                result_src: in std_logic_vector(1 downto 0);
+        read_data: in std_logic_vector(31 downto 0);
+        jalr: in std_logic;
         alu_result    : out std_logic_vector(31 downto 0);
         zero      : out std_logic;
         pc        : out std_logic_vector(31 downto 0);
-        result_src: in std_logic_vector(1 downto 0);
-        read_data: in std_logic_vector(31 downto 0);
+
         write_data : out std_logic_vector(31 downto 0)
+
     );
 end entity datapath;
 
@@ -40,6 +43,8 @@ architecture synth of datapath is
 
     signal pc_int: std_logic_vector(31 downto 0) := (others => '0');
     signal alu_result_int: std_logic_vector(31 downto 0) := (others => '0');
+    signal target_base: std_logic_vector(31 downto 0) := (others => '0');
+    signal target_sum: std_logic_vector(31 downto 0) := (others => '0');
 begin
     alu_inst : entity work.alu
         port map(
@@ -70,15 +75,25 @@ begin
             next_pc => pc_next,
             pc      => pc_int
         );
-
+    target_base_mux : entity work.mux2
+        generic map(
+            WIDTH => 32
+        )
+        port map(
+            d0  => pc_int,
+            d1  => rd1,
+            sel => jalr,
+            y   => target_base
+        );
+    
     PCTarget : entity work.adder
         generic map(
             WIDTH => 32
         )
         port map(
-            a => pc_int,
+            a => target_base,
             b => imm_ext,
-            y => pc_target
+            y => target_sum
         );
     PCMux : entity work.mux2
         generic map(
@@ -140,4 +155,5 @@ begin
 write_data <= rd2;
 pc <= pc_int;
 alu_result <= alu_result_int;
+pc_target <= target_sum (31 downto 1) & '0';
 end architecture synth;

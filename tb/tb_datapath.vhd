@@ -26,6 +26,7 @@ architecture sim of tb_datapath is
     signal zero       : std_logic;
     signal pc         : std_logic_vector(31 downto 0);
     signal result_src : std_logic_vector(1 downto 0) := "00";
+    signal jalr       : std_logic := '0';
     signal read_data  : std_logic_vector(31 downto 0) := (others => '0');
     signal write_data : std_logic_vector(31 downto 0);
     signal done       : boolean := false;
@@ -80,6 +81,7 @@ begin
             pc         => pc,
             result_src => result_src,
             read_data  => read_data,
+            jalr       => jalr,
             write_data => write_data
         );
 
@@ -95,6 +97,8 @@ begin
         variable cycles  : natural := 0;
         variable n_rst   : natural := 0;
         variable n_jump  : natural := 0;
+        variable n_jalr  : natural := 0;
+        variable n_odd   : natural := 0;
         variable n_res   : cnt4_t := (others => 0);
         variable s1      : positive := SEED1;
         variable s2      : positive := SEED2;
@@ -119,7 +123,8 @@ begin
         begin
             errors := errors + 1;
             if errors <= 30 then
-                report "cycle " & integer'image(cycles) & " instr=0x" & to_hstring(instr) & " op=" & to_string(alu_op) &
+                report "cycle " & integer'image(cycles) & " instr=0x" & to_hstring(instr) & " jalr=" & std_logic'image(jalr) &
+                       " pc_src=" & std_logic'image(pc_src) & " op=" & to_string(alu_op) &
                        " src=" & std_logic'image(alu_src) & " imm_src=" & to_string(imm_src) &
                        " res_src=" & to_string(result_src) & ": " & msg severity error;
             end if;
@@ -133,12 +138,15 @@ begin
                        rsrc    : std_logic_vector(1 downto 0);
                        psrc    : std_logic;
                        rdata   : std_logic_vector(31 downto 0);
-                       do_rst  : std_logic) is
+                       do_rst  : std_logic;
+                       jl      : std_logic := '0') is
             variable rs1, rs2, rd : natural;
             variable a, b, imm   : std_logic_vector(31 downto 0);
             variable exp, res    : std_logic_vector(31 downto 0);
             variable pc4         : std_logic_vector(31 downto 0);
             variable known       : boolean;
+            variable base, tsum  : std_logic_vector(31 downto 0);
+            variable tgt_known   : boolean;
         begin
             wait until falling_edge(clk);
             instr      <= v;
@@ -150,6 +158,7 @@ begin
             pc_src     <= psrc;
             read_data  <= rdata;
             rst        <= do_rst;
+            jalr       <= jl;
             wait for 1 ns;
             cycles := cycles + 1;
 
@@ -167,6 +176,14 @@ begin
             end if;
             exp := ref_alu(a, b, op);
             pc4 := std_logic_vector(m_pc + 4);
+            if jl = '1' then
+                base := regs(rs1);
+                tgt_known := valid(rs1);
+            else
+                base := std_logic_vector(m_pc);
+                tgt_known := true;
+            end if;
+            tsum := std_logic_vector(unsigned(base) + unsigned(imm));
 
             checks := checks + 1;
             if pc /= std_logic_vector(m_pc) then
@@ -209,8 +226,17 @@ begin
                 m_pc := (others => '0');
                 n_rst := n_rst + 1;
             elsif psrc = '1' then
-                m_pc := m_pc + unsigned(imm);
+                m_pc := unsigned(tsum(31 downto 1) & '0');
                 n_jump := n_jump + 1;
+                if jl = '1' then
+                    n_jalr := n_jalr + 1;
+                end if;
+                if tsum(0) = '1' then
+                    n_odd := n_odd + 1;
+                end if;
+                if not tgt_known then
+                    m_pc := unsigned(pc);
+                end if;
             else
                 m_pc := m_pc + 4;
             end if;
@@ -243,7 +269,7 @@ begin
         variable op   : std_logic_vector(3 downto 0);
         variable isrc : std_logic_vector(2 downto 0);
         variable rsrc : std_logic_vector(1 downto 0);
-        variable asrc, rw, psrc, rs : std_logic;
+        variable asrc, rw, psrc, rs, jl : std_logic;
     begin
         rst <= '1';
         wait until rising_edge(clk);
@@ -271,6 +297,16 @@ begin
         step(x"7E000FE3", "1000", "010", '0', '0', "00", '1', rnd_word, '0');
         step(i_word(0, 8, x"7FF"), "0000", "000", '1', '1', "00", '1', rnd_word, '0');
         step(i_word(0, 9, x"000"), "0000", "000", '1', '1', "01", '0', x"80000000", '1');
+        step(i_word(0, 10, x"000"), "0000", "000", '1', '1', "01", '0', x"00001001", '0');
+        step(i_word(10, 0, x"000"), "0000", "000", '1', '0', "00", '1', rnd_word, '0', '1');
+        step(i_word(0, 11, x"000"), "0000", "000", '1', '1', "01", '0', x"00000200", '0');
+        step(i_word(11, 11, x"004"), "0000", "000", '1', '1', "10", '1', rnd_word, '0', '1');
+        step(i_word(0, 12, x"000"), "0000", "000", '1', '1', "01", '0', x"00000100", '0');
+        step(i_word(12, 1, x"FFF"), "0000", "000", '1', '1', "10", '1', rnd_word, '0', '1');
+        step(i_word(12, 0, x"7FF"), "0000", "000", '1', '0', "00", '0', rnd_word, '0', '1');
+        step(i_word(0, 13, x"000"), "0000", "000", '1', '1', "01", '0', x"FFFFFFFF", '0');
+        step(i_word(13, 0, x"002"), "0000", "000", '1', '0', "00", '1', rnd_word, '0', '1');
+        step(x"FE000FE3", "1000", "010", '0', '0', "00", '1', rnd_word, '0', '0');
         sweep;
 
         for n in 1 to N_RANDOM loop
@@ -285,7 +321,8 @@ begin
             if rnd(4) = 0 then rw := '0'; else rw := '1'; end if;
             if rnd(5) = 0 then psrc := '1'; else psrc := '0'; end if;
             if rnd(50) = 0 then rs := '1'; rw := '0'; else rs := '0'; end if;
-            step(v, op, isrc, asrc, rw, rsrc, psrc, rnd_word, rs);
+            if rnd(3) = 0 then jl := '1'; else jl := '0'; end if;
+            step(v, op, isrc, asrc, rw, rsrc, psrc, rnd_word, rs, jl);
             if n mod 2000 = 0 then
                 sweep;
             end if;
@@ -294,7 +331,8 @@ begin
 
         report "tb_datapath: " & integer'image(cycles) & " cycles, " & integer'image(checks) & " checks, result_src 00/01/10/11 = " &
                integer'image(n_res(0)) & "/" & integer'image(n_res(1)) & "/" & integer'image(n_res(2)) & "/" &
-               integer'image(n_res(3)) & ", jumps " & integer'image(n_jump) & ", resets " & integer'image(n_rst) & ", " &
+               integer'image(n_res(3)) & ", jumps " & integer'image(n_jump) & " (jalr " & integer'image(n_jalr) & ", odd target " &
+               integer'image(n_odd) & "), resets " & integer'image(n_rst) & ", " &
                integer'image(errors) & " errors";
         assert errors = 0 report "tb_datapath FAILED" severity failure;
         report "tb_datapath PASSED";

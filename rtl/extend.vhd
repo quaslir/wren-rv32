@@ -19,6 +19,7 @@ begin
             (31 downto 12  => instr(31)) & instr(31 downto 20) when "000",
             (31 downto 12 => instr(31)) & instr(7) & instr(30 downto 25) & instr(11 downto 8) & '0' when "010",
             (31 downto 12 => instr(31)) & instr(31 downto 25) & instr(11 downto 7) when "001",
+            (31 downto 20 => instr(31)) & instr(19 downto 12) & instr(20) & instr(30 downto 21) & '0' when "011",
             (others => '0') when others;
     
 end architecture synth;

@@ -32,6 +32,8 @@ begin
         variable v      : std_logic_vector(31 downto 0);
         variable u12    : std_logic_vector(11 downto 0);
         variable u13    : std_logic_vector(12 downto 0);
+        variable u21    : std_logic_vector(20 downto 0);
+        variable jimm   : integer;
         variable exp    : std_logic_vector(31 downto 0);
 
         impure function rnd_word return std_logic_vector is
@@ -92,6 +94,42 @@ begin
             end loop;
         end loop;
 
+        for k in 0 to FILLS + 1 loop
+            for bit_i in 1 to 20 loop
+                for neg in 0 to 1 loop
+                    fill := fill_pattern(k, rnd_word);
+                    if neg = 0 then
+                        jimm := 2 ** bit_i;
+                        if bit_i = 20 then
+                            jimm := -(2 ** 20);
+                        end if;
+                    else
+                        jimm := -(2 ** bit_i) + 2;
+                        if bit_i = 20 then
+                            jimm := (2 ** 20) - 2;
+                        end if;
+                    end if;
+                    u21 := std_logic_vector(to_signed(jimm, 21));
+                    v := u21(20) & u21(10 downto 1) & u21(11) & u21(19 downto 12) & fill(11 downto 0);
+                    check("J", "011", v, std_logic_vector(to_signed(jimm, 32)), jimm);
+                end loop;
+            end loop;
+        end loop;
+        for n in 1 to 40000 loop
+            uniform(s1, s2, r);
+            jimm := 2 * (integer(trunc(r * 1048576.0)) - 524288);
+            fill := rnd_word;
+            u21 := std_logic_vector(to_signed(jimm, 21));
+            v := u21(20) & u21(10 downto 1) & u21(11) & u21(19 downto 12) & fill(11 downto 0);
+            check("J", "011", v, std_logic_vector(to_signed(jimm, 32)), jimm);
+        end loop;
+        for jv in -2048 to 2047 loop
+            jimm := 2 * jv;
+            u21 := std_logic_vector(to_signed(jimm, 21));
+            v := u21(20) & u21(10 downto 1) & u21(11) & u21(19 downto 12) & x"0EF";
+            check("J", "011", v, std_logic_vector(to_signed(jimm, 32)), jimm);
+        end loop;
+
         check("I", "000", x"80000013", x"FFFFF800", -2048);
         check("I", "000", x"7FF00013", x"000007FF", 2047);
         check("I", "000", x"FFF00013", x"FFFFFFFF", -1);
@@ -103,9 +141,16 @@ begin
         check("B", "010", x"80000063", x"FFFFF000", -4096);
         check("B", "010", x"000000E3", x"00000800", 2048);
         check("B", "010", x"00000463", x"00000008", 8);
+        check("J", "011", x"008000EF", x"00000008", 8);
+        check("J", "011", x"FFDFF06F", x"FFFFFFFC", -4);
+        check("J", "011", x"0010006F", x"00000800", 2048);
+        check("J", "011", x"800000EF", x"FFF00000", -1048576);
+        check("J", "011", x"7FFFF0EF", x"000FFFFE", 1048574);
+        check("J", "011", x"000FF0EF", x"000FF000", 1044480);
+        check("J", "011", x"7FE000EF", x"000007FE", 2046);
 
         if CHECK_UNUSED_ZERO then
-            for src in 3 to 7 loop
+            for src in 4 to 7 loop
                 for n in 1 to 2000 loop
                     v := rnd_word;
                     if n = 1 then
@@ -115,7 +160,7 @@ begin
                 end loop;
             end loop;
         else
-            for src in 3 to 7 loop
+            for src in 4 to 7 loop
                 for n in 1 to 100 loop
                     instr   <= rnd_word;
                     imm_src <= std_logic_vector(to_unsigned(src, 3));

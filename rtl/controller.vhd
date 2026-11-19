@@ -11,8 +11,8 @@ entity controller is
        alu_op: out std_logic_vector(3 downto 0);
        imm_src: out std_logic_vector(2 downto 0);
        mem_write: out std_logic;
-       result_src: out std_logic_vector(1 downto 0)
-
+       result_src: out std_logic_vector(1 downto 0);
+       jalr:  out std_logic
     );
 end entity controller;
 
@@ -24,6 +24,7 @@ signal reg_write_raw: std_logic := '0';
 signal mem_write_raw: std_logic := '0';
 signal mem_access: std_logic := '0';
 signal mis: std_logic := '0';
+signal jump : std_logic := '0';
 alias funct3 : std_logic_vector(2 downto 0) is instr(14 downto 12);
 alias size: std_logic_vector(1 downto 0) is funct3(1 downto 0);
 begin
@@ -38,7 +39,9 @@ begin
             branch    => branch,
             mem_write => mem_write_raw,
             result_src => result_src,
-            mem_access => mem_access
+            mem_access => mem_access,
+            jump =>  jump,
+            jalr =>  jalr
         );       
         mis <= '1' when mem_access = '1' and size = "01" and addr_lo(0) = '1' else
             '1' when mem_access = '1' and size = "10" and (addr_lo(0) = '1' or addr_lo(1) = '1') else
@@ -46,6 +49,6 @@ begin
         reg_write <= reg_write_raw and not mis;
         mem_write <= mem_write_raw and not mis;
         misaligned <= mis;
-        pc_src <= branch and (funct3(2) xor zero xor funct3(0));
+        pc_src <= (branch and (funct3(2) xor zero xor funct3(0))) or jump;
 end architecture synth;
 
