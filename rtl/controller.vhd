@@ -12,7 +12,8 @@ entity controller is
        imm_src: out std_logic_vector(2 downto 0);
        mem_write: out std_logic;
        result_src: out std_logic_vector(1 downto 0);
-       jalr:  out std_logic
+       jalr:  out std_logic;
+       alu_src_a : out std_logic
     );
 end entity controller;
 
@@ -41,7 +42,8 @@ begin
             result_src => result_src,
             mem_access => mem_access,
             jump =>  jump,
-            jalr =>  jalr
+            jalr =>  jalr,
+            alu_src_a => alu_src_a
         );       
         mis <= '1' when mem_access = '1' and size = "01" and addr_lo(0) = '1' else
             '1' when mem_access = '1' and size = "10" and (addr_lo(0) = '1' or addr_lo(1) = '1') else

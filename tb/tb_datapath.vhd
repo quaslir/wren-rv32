@@ -27,6 +27,7 @@ architecture sim of tb_datapath is
     signal pc         : std_logic_vector(31 downto 0);
     signal result_src : std_logic_vector(1 downto 0) := "00";
     signal jalr       : std_logic := '0';
+    signal alu_src_a  : std_logic := '0';
     signal read_data  : std_logic_vector(31 downto 0) := (others => '0');
     signal write_data : std_logic_vector(31 downto 0);
     signal done       : boolean := false;
@@ -60,6 +61,8 @@ architecture sim of tb_datapath is
             when "000"  => return (31 downto 12 => v(31)) & v(31 downto 20);
             when "001"  => return (31 downto 12 => v(31)) & v(31 downto 25) & v(11 downto 7);
             when "010"  => return (31 downto 12 => v(31)) & v(7) & v(30 downto 25) & v(11 downto 8) & '0';
+            when "011"  => return (31 downto 20 => v(31)) & v(19 downto 12) & v(20) & v(30 downto 21) & '0';
+            when "100"  => return v(31 downto 12) & x"000";
             when others => return x"00000000";
         end case;
     end function;
@@ -82,6 +85,7 @@ begin
             result_src => result_src,
             read_data  => read_data,
             jalr       => jalr,
+            alu_src_a  => alu_src_a,
             write_data => write_data
         );
 
@@ -99,6 +103,7 @@ begin
         variable n_jump  : natural := 0;
         variable n_jalr  : natural := 0;
         variable n_odd   : natural := 0;
+        variable n_srca  : natural := 0;
         variable n_res   : cnt4_t := (others => 0);
         variable s1      : positive := SEED1;
         variable s2      : positive := SEED2;
@@ -124,7 +129,7 @@ begin
             errors := errors + 1;
             if errors <= 30 then
                 report "cycle " & integer'image(cycles) & " instr=0x" & to_hstring(instr) & " jalr=" & std_logic'image(jalr) &
-                       " pc_src=" & std_logic'image(pc_src) & " op=" & to_string(alu_op) &
+                       " pc_src=" & std_logic'image(pc_src) & " src_a=" & std_logic'image(alu_src_a) & " op=" & to_string(alu_op) &
                        " src=" & std_logic'image(alu_src) & " imm_src=" & to_string(imm_src) &
                        " res_src=" & to_string(result_src) & ": " & msg severity error;
             end if;
@@ -139,7 +144,8 @@ begin
                        psrc    : std_logic;
                        rdata   : std_logic_vector(31 downto 0);
                        do_rst  : std_logic;
-                       jl      : std_logic := '0') is
+                       jl      : std_logic := '0';
+                       sa      : std_logic := '0') is
             variable rs1, rs2, rd : natural;
             variable a, b, imm   : std_logic_vector(31 downto 0);
             variable exp, res    : std_logic_vector(31 downto 0);
@@ -159,6 +165,7 @@ begin
             read_data  <= rdata;
             rst        <= do_rst;
             jalr       <= jl;
+            alu_src_a  <= sa;
             wait for 1 ns;
             cycles := cycles + 1;
 
@@ -166,13 +173,20 @@ begin
             rs2 := to_integer(unsigned(v(24 downto 20)));
             rd  := to_integer(unsigned(v(11 downto 7)));
             imm := ref_ext(v, isrc);
-            a   := regs(rs1);
+            if sa = '1' then
+                a := std_logic_vector(m_pc);
+            else
+                a := regs(rs1);
+            end if;
             if asrc = '1' then
                 b := imm;
-                known := valid(rs1);
+                known := sa = '1' or valid(rs1);
             else
                 b := regs(rs2);
-                known := valid(rs1) and valid(rs2);
+                known := (sa = '1' or valid(rs1)) and valid(rs2);
+            end if;
+            if sa = '1' then
+                n_srca := n_srca + 1;
             end if;
             exp := ref_alu(a, b, op);
             pc4 := std_logic_vector(m_pc + 4);
@@ -269,7 +283,7 @@ begin
         variable op   : std_logic_vector(3 downto 0);
         variable isrc : std_logic_vector(2 downto 0);
         variable rsrc : std_logic_vector(1 downto 0);
-        variable asrc, rw, psrc, rs, jl : std_logic;
+        variable asrc, rw, psrc, rs, jl, sa : std_logic;
     begin
         rst <= '1';
         wait until rising_edge(clk);
@@ -307,6 +321,15 @@ begin
         step(i_word(0, 13, x"000"), "0000", "000", '1', '1', "01", '0', x"FFFFFFFF", '0');
         step(i_word(13, 0, x"002"), "0000", "000", '1', '0', "00", '1', rnd_word, '0', '1');
         step(x"FE000FE3", "1000", "010", '0', '0', "00", '1', rnd_word, '0', '0');
+        step(x"00001097", "0000", "100", '1', '1', "00", '0', rnd_word, '0', '0', '1');
+        step(x"FFFFF117", "0000", "100", '1', '1', "00", '0', rnd_word, '0', '0', '1');
+        step(x"80000197", "0000", "100", '1', '1', "00", '0', rnd_word, '0', '0', '1');
+        step(x"800002B7", "0000", "100", '1', '1', "11", '0', rnd_word, '0', '0', '0');
+        step(x"123450B7", "0000", "100", '1', '1', "11", '0', rnd_word, '0', '0', '0');
+        step(x"0FF00217", "0000", "100", '1', '1', "00", '0', rnd_word, '0', '0', '1');
+        step(i_word(0, 14, x"000"), "0000", "000", '1', '1', "01", '0', x"00000301", '0');
+        step(i_word(14, 0, x"010"), "0000", "000", '1', '0', "00", '1', rnd_word, '0', '1', '1');
+        step(x"00000397", "0000", "100", '1', '1', "00", '0', rnd_word, '0', '0', '1');
         sweep;
 
         for n in 1 to N_RANDOM loop
@@ -315,14 +338,15 @@ begin
                 v(19 downto 15) := v(24 downto 20);
             end if;
             op := OPS(rnd(OPS'length));
-            isrc := std_logic_vector(to_unsigned(rnd(3), 3));
+            isrc := std_logic_vector(to_unsigned(rnd(5), 3));
             rsrc := std_logic_vector(to_unsigned(rnd(4), 2));
             if rnd(2) = 0 then asrc := '0'; else asrc := '1'; end if;
             if rnd(4) = 0 then rw := '0'; else rw := '1'; end if;
             if rnd(5) = 0 then psrc := '1'; else psrc := '0'; end if;
             if rnd(50) = 0 then rs := '1'; rw := '0'; else rs := '0'; end if;
             if rnd(3) = 0 then jl := '1'; else jl := '0'; end if;
-            step(v, op, isrc, asrc, rw, rsrc, psrc, rnd_word, rs, jl);
+            if rnd(3) = 0 then sa := '1'; else sa := '0'; end if;
+            step(v, op, isrc, asrc, rw, rsrc, psrc, rnd_word, rs, jl, sa);
             if n mod 2000 = 0 then
                 sweep;
             end if;
@@ -332,7 +356,7 @@ begin
         report "tb_datapath: " & integer'image(cycles) & " cycles, " & integer'image(checks) & " checks, result_src 00/01/10/11 = " &
                integer'image(n_res(0)) & "/" & integer'image(n_res(1)) & "/" & integer'image(n_res(2)) & "/" &
                integer'image(n_res(3)) & ", jumps " & integer'image(n_jump) & " (jalr " & integer'image(n_jalr) & ", odd target " &
-               integer'image(n_odd) & "), resets " & integer'image(n_rst) & ", " &
+               integer'image(n_odd) & "), src_a=pc " & integer'image(n_srca) & ", resets " & integer'image(n_rst) & ", " &
                integer'image(errors) & " errors";
         assert errors = 0 report "tb_datapath FAILED" severity failure;
         report "tb_datapath PASSED";

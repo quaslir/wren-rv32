@@ -40,6 +40,8 @@ architecture sim of tb_core is
     constant OP_S    : std_logic_vector(6 downto 0) := "0100011";
     constant OP_J    : std_logic_vector(6 downto 0) := "1101111";
     constant OP_JR   : std_logic_vector(6 downto 0) := "1100111";
+    constant OP_LUI  : std_logic_vector(6 downto 0) := "0110111";
+    constant OP_AUI  : std_logic_vector(6 downto 0) := "0010111";
 
     function word_of(a : std_logic_vector(31 downto 0)) return natural is
     begin
@@ -159,6 +161,11 @@ architecture sim of tb_core is
             & std_logic_vector(to_unsigned(rd, 5)) & OP_JR;
     end function;
 
+    function enc_u(imm20 : natural; rd : natural; op : std_logic_vector(6 downto 0)) return std_logic_vector is
+    begin
+        return std_logic_vector(to_unsigned(imm20, 20)) & std_logic_vector(to_unsigned(rd, 5)) & op;
+    end function;
+
     function enc_b(imm : integer; rs2, rs1 : natural; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
         variable u : std_logic_vector(12 downto 0) := std_logic_vector(to_signed(imm, 13));
     begin
@@ -215,6 +222,7 @@ begin
         variable jumps       : boolean;
         variable target      : std_logic_vector(31 downto 0);
         variable n_jal, n_jalr, n_odd : natural := 0;
+        variable n_lui, n_auipc : natural := 0;
         variable exp         : std_logic_vector(31 downto 0);
         variable kind        : natural;
 
@@ -299,6 +307,19 @@ begin
                 target := std_logic_vector(m_pc + unsigned(imm));
                 exp    := std_logic_vector(m_pc + 4);
                 n_jal  := n_jal + 1;
+            elsif opcode = OP_LUI then
+                legal  := true;
+                writes := true;
+                jumps  := true;
+                imm    := v(31 downto 12) & x"000";
+                exp    := imm;
+                n_lui  := n_lui + 1;
+            elsif opcode = OP_AUI then
+                legal  := true;
+                writes := true;
+                imm    := v(31 downto 12) & x"000";
+                exp    := std_logic_vector(m_pc + unsigned(imm));
+                n_auipc := n_auipc + 1;
             elsif opcode = OP_JR and f3 = "000" then
                 legal  := true;
                 writes := true;
@@ -588,6 +609,13 @@ begin
                     when 2      => v := enc_jr(rnd(4096) - 2048, rnd_reg, std_logic_vector(to_unsigned(1 + rnd(7), 3)), rnd_reg);
                     when others => v := enc_jr(rnd(4096) - 2048, rnd_reg, "000", rnd_reg);
                 end case;
+            elsif kind < 91 then
+                case rnd(4) is
+                    when 0      => v := enc_u(rnd(1048576), rnd_reg, OP_LUI);
+                    when 1      => v := enc_u(524288 + rnd(524288), rnd_reg, OP_LUI);
+                    when 2      => v := enc_u(rnd(1048576), rnd_reg, OP_AUI);
+                    when others => v := enc_u(1048576 - 1 - rnd(16), rnd_reg, OP_AUI);
+                end case;
             elsif kind < 92 then
                 v := enc_r("0000001", rnd_reg, rnd_reg, std_logic_vector(to_unsigned(rnd(8), 3)), rnd_reg);
             elsif kind < 94 then
@@ -603,7 +631,8 @@ begin
             else
                 v := rnd_word;
                 if v(6 downto 0) = OP_R or v(6 downto 0) = OP_I or v(6 downto 0) = OP_B
-                   or v(6 downto 0) = OP_L or v(6 downto 0) = OP_S or v(6 downto 0) = OP_J or v(6 downto 0) = OP_JR then
+                   or v(6 downto 0) = OP_L or v(6 downto 0) = OP_S or v(6 downto 0) = OP_J or v(6 downto 0) = OP_JR
+                   or v(6 downto 0) = OP_LUI or v(6 downto 0) = OP_AUI then
                     v(6 downto 0) := "0001011";
                 end if;
             end if;
@@ -619,7 +648,8 @@ begin
             & ", lbu " & integer'image(n_ld(4)) & ", lhu " & integer'image(n_ld(5)) & "), store " & integer'image(n_sw)
             & " (sb " & integer'image(n_st(0)) & ", sh " & integer'image(n_st(1)) & ", sw " & integer'image(n_st(2))
             & ", misaligned " & integer'image(n_sw_mis) & "), misaligned loads " & integer'image(n_ld_mis) & ", illegal " & integer'image(n_ill) severity note;
-        report "jal " & integer'image(n_jal) & ", jalr " & integer'image(n_jalr) & " (odd target " & integer'image(n_odd) & ")" severity note;
+        report "jal " & integer'image(n_jal) & ", jalr " & integer'image(n_jalr) & " (odd target " & integer'image(n_odd) & "), lui " & integer'image(n_lui) &
+               ", auipc " & integer'image(n_auipc) severity note;
         if err = 0 then
             report "tb_core: ALL " & integer'image(cnt) & " CYCLES PASSED" severity note;
         else

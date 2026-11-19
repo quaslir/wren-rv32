@@ -1,0 +1,835 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="3622" viewBox="0 0 1640 3622" font-family="Consolas, 'DejaVu Sans Mono', monospace">
+<rect width="100%" height="100%" fill="#f4f4f4"/>
+<text x="20" y="34" font-size="20" text-anchor="start" font-weight="bold" fill="#000">wren-rv32 — RTL Viewer (Quartus-style) netlist diagram</text>
+<text x="20" y="54" font-size="12" text-anchor="start" font-weight="normal" fill="#333">Top-level entity: Cpu (quartus/wrev-rv32.qsf)  ·  single-cycle RV32I  ·  generated from rtl/*.vhd</text>
+<g transform="translate(20,72)">
+<rect x="0" y="0" width="1600" height="520" fill="#fff" stroke="#7a7a7a"/>
+<rect x="0" y="0" width="1600" height="26" fill="#dfe6f0" stroke="#7a7a7a"/>
+<text x="10" y="18" font-size="13" text-anchor="start" font-weight="bold" fill="#000">Project Navigator — Hierarchy</text>
+<text x="1590" y="18" font-size="11" text-anchor="end" font-weight="normal" fill="#333">entity:instance  (file)</text>
+<g transform="translate(20,40)">
+<rect x="7" y="4" width="12" height="12" fill="#6a8fd0" stroke="#3b5a99"/>
+<text x="24" y="14" font-size="11.5" text-anchor="start" font-weight="bold" fill="#000">Cpu</text>
+<text x="470" y="14" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">cpu.vhd</text>
+<text x="610" y="14" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">top</text>
+<polyline points="19,16 19,31 32,31" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="33" y="25" width="12" height="12" fill="#6a8fd0" stroke="#3b5a99"/>
+<text x="50" y="35" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">core:core_inst</text>
+<text x="470" y="35" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">core.vhd</text>
+<polyline points="45,37 45,52 58,52" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="59" y="46" width="12" height="12" fill="#6a8fd0" stroke="#3b5a99"/>
+<text x="76" y="56" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">controller:controller_inst</text>
+<text x="470" y="56" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">controller.vhd</text>
+<polyline points="71,58 71,73 84,73" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="67" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="77" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">control_unit:control_unit_inst</text>
+<text x="470" y="77" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">control_unit.vhd</text>
+<polyline points="45,37 45,94 58,94" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="59" y="88" width="12" height="12" fill="#6a8fd0" stroke="#3b5a99"/>
+<text x="76" y="98" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">datapath:datapath_inst</text>
+<text x="470" y="98" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">datapath.vhd</text>
+<polyline points="71,100 71,115 84,115" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="109" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="119" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">pc_reg:pc_reg_inst</text>
+<text x="470" y="119" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">pc_reg.vhd</text>
+<text x="610" y="119" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32</text>
+<polyline points="71,100 71,136 84,136" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="130" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="140" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">mux2:PCMux</text>
+<text x="470" y="140" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">mux2.vhd</text>
+<text x="610" y="140" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32</text>
+<polyline points="71,100 71,157 84,157" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="151" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="161" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">adder:adder_inst</text>
+<text x="470" y="161" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">adder.vhd</text>
+<text x="610" y="161" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32  (PC+4)</text>
+<polyline points="71,100 71,178 84,178" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="172" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="182" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">mux2:target_base_mux</text>
+<text x="470" y="182" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">mux2.vhd</text>
+<text x="610" y="182" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32  (PC / rs1 for JALR)</text>
+<polyline points="71,100 71,199 84,199" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="193" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="203" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">adder:PCTarget</text>
+<text x="470" y="203" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">adder.vhd</text>
+<text x="610" y="203" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32  (base+imm)</text>
+<polyline points="71,100 71,220 84,220" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="214" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="224" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">regfile:regfile_inst</text>
+<text x="470" y="224" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">regfile.vhd</text>
+<text x="610" y="224" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">32 x 32</text>
+<polyline points="71,100 71,241 84,241" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="235" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="245" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">extend:extend_inst</text>
+<text x="470" y="245" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">extend.vhd</text>
+<polyline points="71,100 71,262 84,262" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="256" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="266" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">mux2:mux2_inst</text>
+<text x="470" y="266" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">mux2.vhd</text>
+<text x="610" y="266" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32  (ALU src B)</text>
+<polyline points="71,100 71,283 84,283" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="277" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="287" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">alu:alu_inst</text>
+<text x="470" y="287" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">alu.vhd</text>
+<polyline points="71,100 71,304 84,304" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="298" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="308" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">mux4:ResultMux</text>
+<text x="470" y="308" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">mux4.vhd</text>
+<text x="610" y="308" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=32</text>
+<polyline points="45,37 45,325 58,325" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="59" y="319" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="76" y="329" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">store_align:store_align_inst</text>
+<text x="470" y="329" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">store_align.vhd</text>
+<text x="610" y="329" font-size="10.5" text-anchor="start" font-weight="normal" fill="#c00" font-style="italic">not in .qsf!</text>
+<polyline points="45,37 45,346 58,346" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="59" y="340" width="12" height="12" fill="#6a8fd0" stroke="#3b5a99"/>
+<text x="76" y="350" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">load_ext:load_ext_inst</text>
+<text x="470" y="350" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">load_ext.vhd</text>
+<text x="610" y="350" font-size="10.5" text-anchor="start" font-weight="normal" fill="#c00" font-style="italic">not in .qsf!</text>
+<polyline points="71,352 71,367 84,367" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="361" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="371" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">mux4:byte_mux</text>
+<text x="470" y="371" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">mux4.vhd</text>
+<text x="610" y="371" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=8</text>
+<polyline points="71,352 71,388 84,388" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="85" y="382" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="102" y="392" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">mux2:half_word_mux</text>
+<text x="470" y="392" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">mux2.vhd</text>
+<text x="610" y="392" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">WIDTH=16</text>
+<polyline points="19,16 19,409 32,409" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="33" y="403" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="50" y="413" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">instr_mem:instr_mem_inst</text>
+<text x="470" y="413" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">instr_mem.vhd</text>
+<text x="610" y="413" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">DEPTH=64, INIT_FILE=sw/main.hex</text>
+<polyline points="19,16 19,430 32,430" fill="none" stroke="#999" stroke-dasharray="1,2"/>
+<rect x="33" y="424" width="12" height="12" fill="#b7c9e8" stroke="#3b5a99"/>
+<text x="50" y="434" font-size="11.5" text-anchor="start" font-weight="normal" fill="#000">data_mem:data_mem_inst</text>
+<text x="470" y="434" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">data_mem.vhd</text>
+<text x="610" y="434" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555">DEPTH=32</text>
+<text x="1000" y="14" font-size="12" text-anchor="start" font-weight="bold" fill="#000">Legend</text>
+<line x1="1000" y1="34" x2="1050" y2="34" stroke="#000" stroke-width="1.2"/>
+<text x="1060" y="38" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">single-bit net (std_logic)</text>
+<line x1="1000" y1="56" x2="1050" y2="56" stroke="#000" stroke-width="2.6"/>
+<text x="1060" y="60" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">bus (std_logic_vector)</text>
+<circle cx="1025" cy="78" r="3.5"/>
+<text x="1060" y="82" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">junction (net fans out)</text>
+<polygon points="980,94 1041,94 1050,102 1041,110 980,110" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="985" y="106" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">in</text>
+<text x="1060" y="106" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">input pin of the current level</text>
+<polygon points="1000,126 1009,118 1070,118 1070,134 1009,134" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1013" y="130" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">out</text>
+<text x="1080" y="130" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">output pin of the current level</text>
+<rect x="1000" y="142" width="50" height="22" fill="#fff" stroke="#000"/>
+<text x="1060" y="157" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">entity instance (entity:instance above)</text>
+<rect x="1000" y="172" width="50" height="22" fill="#fff8e6" stroke="#000"/>
+<text x="1060" y="187" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">concurrent logic inside the entity</text>
+<rect x="1000" y="202" width="50" height="22" fill="#eef6ff" stroke="#000"/>
+<text x="1060" y="217" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">memory</text>
+<rect x="1031.7" y="234" width="18.3" height="16" fill="#fff" stroke="#000" stroke-dasharray="2,2"/>
+<text x="1040.85" y="246" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#000">4</text>
+<text x="1060" y="246" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">constant</text>
+<line x1="1000" y1="266" x2="1030" y2="266" stroke="#000" stroke-width="1.2"/>
+<line x1="1026" y1="262" x2="1034" y2="270" stroke="#c00" stroke-width="1.4"/>
+<line x1="1026" y1="270" x2="1034" y2="262" stroke="#c00" stroke-width="1.4"/>
+<text x="1038" y="270" font-size="9.5" text-anchor="start" font-weight="normal" fill="#c00" font-style="italic">port left open</text>
+<text x="1000" y="300" font-size="10.5" text-anchor="start" font-weight="normal" fill="#7a0000">Dark-red text = net name / bus slice.</text>
+<text x="1000" y="316" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">Each page below is one level of the</text>
+<text x="1000" y="330" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">hierarchy, like double-clicking an</text>
+<text x="1000" y="344" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instance in Quartus&#x27; RTL Viewer.</text>
+</g></g>
+<g transform="translate(20,612)">
+<rect x="0" y="0" width="1600" height="440" fill="#fff" stroke="#7a7a7a"/>
+<rect x="0" y="0" width="1600" height="26" fill="#dfe6f0" stroke="#7a7a7a"/>
+<text x="10" y="18" font-size="13" text-anchor="start" font-weight="bold" fill="#000">Page 1 — Cpu (top level)</text>
+<text x="1590" y="18" font-size="11" text-anchor="end" font-weight="normal" fill="#333">rtl/cpu.vhd</text>
+<g transform="translate(20,40)">
+<rect x="260" y="120" width="200" height="174" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="260" y="115" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">core:core_inst</text>
+<line x1="254" y1="144" x2="260" y2="144" stroke="#000" stroke-width="2.6"/>
+<text x="265" y="148" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[]</text>
+<line x1="254" y1="166" x2="260" y2="166" stroke="#000" stroke-width="2.6"/>
+<text x="265" y="170" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">read_data[]</text>
+<line x1="254" y1="188" x2="260" y2="188" stroke="#000" stroke-width="1.2"/>
+<text x="265" y="192" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rst</text>
+<line x1="254" y1="210" x2="260" y2="210" stroke="#000" stroke-width="1.2"/>
+<text x="265" y="214" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<line x1="460" y1="144" x2="466" y2="144" stroke="#000" stroke-width="2.6"/>
+<text x="455" y="148" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">pc[]</text>
+<line x1="460" y1="166" x2="466" y2="166" stroke="#000" stroke-width="2.6"/>
+<text x="455" y="170" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">alu_result[]</text>
+<line x1="460" y1="188" x2="466" y2="188" stroke="#000" stroke-width="2.6"/>
+<text x="455" y="192" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">write_data[]</text>
+<line x1="460" y1="210" x2="466" y2="210" stroke="#000" stroke-width="2.6"/>
+<text x="455" y="214" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">be[]</text>
+<line x1="460" y1="232" x2="466" y2="232" stroke="#000" stroke-width="1.2"/>
+<text x="455" y="236" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">mem_write</text>
+<line x1="460" y1="254" x2="466" y2="254" stroke="#000" stroke-width="1.2"/>
+<text x="455" y="258" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">illegal</text>
+<line x1="460" y1="276" x2="466" y2="276" stroke="#000" stroke-width="1.2"/>
+<text x="455" y="280" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">misaligned</text>
+<rect x="700" y="40" width="180" height="42" fill="#eef6ff" stroke="#000" stroke-width="1.2"/>
+<text x="700" y="35" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">instr_mem:instr_mem_inst</text>
+<line x1="694" y1="64" x2="700" y2="64" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="68" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr[]</text>
+<line x1="880" y1="64" x2="886" y2="64" stroke="#000" stroke-width="2.6"/>
+<text x="875" y="68" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">instr[]</text>
+<text x="790" y="104" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">DEPTH=64, INIT_FILE=sw/main.hex</text>
+<rect x="700" y="142" width="180" height="130" fill="#eef6ff" stroke="#000" stroke-width="1.2"/>
+<text x="700" y="137" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">data_mem:data_mem_inst</text>
+<line x1="694" y1="166" x2="700" y2="166" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="170" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr[]</text>
+<line x1="694" y1="188" x2="700" y2="188" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="192" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">wd[]</text>
+<line x1="694" y1="210" x2="700" y2="210" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="214" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">be[]</text>
+<line x1="694" y1="232" x2="700" y2="232" stroke="#000" stroke-width="1.2"/>
+<text x="705" y="236" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">we</text>
+<line x1="694" y1="254" x2="700" y2="254" stroke="#000" stroke-width="1.2"/>
+<text x="705" y="258" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<line x1="880" y1="166" x2="886" y2="166" stroke="#000" stroke-width="2.6"/>
+<text x="875" y="170" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">rd[]</text>
+<text x="790.0" y="285" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">DEPTH=32, byte-enable writes</text>
+<polygon points="80,180 141,180 150,188 141,196 80,196" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="192" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rst</text>
+<polygon points="80,202 141,202 150,210 141,218 80,218" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="214" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<polygon points="1000,110 1009,102 1113,102 1113,118 1009,118" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1013" y="114" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">result[31..0]</text>
+<polyline points="150,188 260,188" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="150,210 260,210" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="150,210 200,210 200,330 660,330 660,254 700,254" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<circle cx="200" cy="210" r="3" fill="#000"/>
+<text x="600" y="326" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">clk</text>
+<polyline points="460,144 490,144 490,64 700,64" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="500" y="60" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">pc</text>
+<polyline points="880,64 920,64 920,22 240,22 240,144 260,144" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="560" y="18" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">instr[31..0]</text>
+<polyline points="880,166 960,166 960,6 225,6 225,166 260,166" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="700" y="2" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">read_data[31..0]</text>
+<polyline points="460,166 700,166" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="460,166 520,166 520,110 1000,110" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="520" cy="166" r="3.5" fill="#000"/>
+<text x="530" y="106" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">alu_result</text>
+<text x="600" y="162" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">alu_result</text>
+<polyline points="460,188 700,188" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="560" y="184" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">write_data</text>
+<polyline points="460,210 700,210" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="560" y="206" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">be[3..0]</text>
+<polyline points="460,232 700,232" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="560" y="228" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">mem_write</text>
+<line x1="460" y1="254" x2="500" y2="254" stroke="#000" stroke-width="1.2"/>
+<line x1="496" y1="250" x2="504" y2="258" stroke="#c00" stroke-width="1.4"/>
+<line x1="496" y1="258" x2="504" y2="250" stroke="#c00" stroke-width="1.4"/>
+<text x="508" y="258" font-size="9.5" text-anchor="start" font-weight="normal" fill="#c00" font-style="italic">open</text>
+<line x1="460" y1="276" x2="500" y2="276" stroke="#000" stroke-width="1.2"/>
+<line x1="496" y1="272" x2="504" y2="280" stroke="#c00" stroke-width="1.4"/>
+<line x1="496" y1="280" x2="504" y2="272" stroke="#c00" stroke-width="1.4"/>
+<text x="508" y="280" font-size="9.5" text-anchor="start" font-weight="normal" fill="#c00" font-style="italic">open</text>
+<text x="20" y="375" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555" font-style="italic">Note: core.illegal is mapped to signal &#x27;illegal&#x27; and core.misaligned to &#x27;out_open&#x27;; neither leaves the chip, so Quartus will</text>
+<text x="20" y="389" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555" font-style="italic">prune the logic that only drives them. Only result[31..0] (= alu_result) is a real output.</text>
+</g></g>
+<g transform="translate(20,1072)">
+<rect x="0" y="0" width="1600" height="660" fill="#fff" stroke="#7a7a7a"/>
+<rect x="0" y="0" width="1600" height="26" fill="#dfe6f0" stroke="#7a7a7a"/>
+<text x="10" y="18" font-size="13" text-anchor="start" font-weight="bold" fill="#000">Page 2 — core:core_inst</text>
+<text x="1590" y="18" font-size="11" text-anchor="end" font-weight="normal" fill="#333">rtl/core.vhd</text>
+<g transform="translate(20,40)">
+<rect x="420" y="60" width="200" height="240" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="420" y="55" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">controller:controller_inst</text>
+<line x1="414" y1="84" x2="420" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[]</text>
+<line x1="414" y1="106" x2="420" y2="106" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="110" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr_lo[]</text>
+<line x1="414" y1="128" x2="420" y2="128" stroke="#000" stroke-width="1.2"/>
+<text x="425" y="132" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">zero</text>
+<line x1="620" y1="84" x2="626" y2="84" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="88" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">illegal</text>
+<line x1="620" y1="106" x2="626" y2="106" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="110" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">misaligned</text>
+<line x1="620" y1="128" x2="626" y2="128" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="132" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">mem_write</text>
+<line x1="620" y1="150" x2="626" y2="150" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="154" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">pc_src</text>
+<line x1="620" y1="172" x2="626" y2="172" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="176" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">alu_src</text>
+<line x1="620" y1="194" x2="626" y2="194" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="198" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">reg_write</text>
+<line x1="620" y1="216" x2="626" y2="216" stroke="#000" stroke-width="2.6"/>
+<text x="615" y="220" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">imm_src[]</text>
+<line x1="620" y1="238" x2="626" y2="238" stroke="#000" stroke-width="2.6"/>
+<text x="615" y="242" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">alu_op[]</text>
+<line x1="620" y1="260" x2="626" y2="260" stroke="#000" stroke-width="2.6"/>
+<text x="615" y="264" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">result_src[]</text>
+<line x1="620" y1="282" x2="626" y2="282" stroke="#000" stroke-width="1.2"/>
+<text x="615" y="286" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">jalr</text>
+<rect x="820" y="126" width="220" height="262" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="820" y="121" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">datapath:datapath_inst</text>
+<line x1="814" y1="150" x2="820" y2="150" stroke="#000" stroke-width="1.2"/>
+<text x="825" y="154" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">pc_src</text>
+<line x1="814" y1="172" x2="820" y2="172" stroke="#000" stroke-width="1.2"/>
+<text x="825" y="176" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_src</text>
+<line x1="814" y1="194" x2="820" y2="194" stroke="#000" stroke-width="1.2"/>
+<text x="825" y="198" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">reg_write</text>
+<line x1="814" y1="216" x2="820" y2="216" stroke="#000" stroke-width="2.6"/>
+<text x="825" y="220" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">imm_src[]</text>
+<line x1="814" y1="238" x2="820" y2="238" stroke="#000" stroke-width="2.6"/>
+<text x="825" y="242" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_op[]</text>
+<line x1="814" y1="260" x2="820" y2="260" stroke="#000" stroke-width="2.6"/>
+<text x="825" y="264" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">result_src[]</text>
+<line x1="814" y1="282" x2="820" y2="282" stroke="#000" stroke-width="1.2"/>
+<text x="825" y="286" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">jalr</text>
+<line x1="814" y1="304" x2="820" y2="304" stroke="#000" stroke-width="2.6"/>
+<text x="825" y="308" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[]</text>
+<line x1="814" y1="326" x2="820" y2="326" stroke="#000" stroke-width="2.6"/>
+<text x="825" y="330" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">read_data[]</text>
+<line x1="814" y1="348" x2="820" y2="348" stroke="#000" stroke-width="1.2"/>
+<text x="825" y="352" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<line x1="814" y1="370" x2="820" y2="370" stroke="#000" stroke-width="1.2"/>
+<text x="825" y="374" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rst</text>
+<line x1="1040" y1="150" x2="1046" y2="150" stroke="#000" stroke-width="2.6"/>
+<text x="1035" y="154" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">pc[]</text>
+<line x1="1040" y1="172" x2="1046" y2="172" stroke="#000" stroke-width="2.6"/>
+<text x="1035" y="176" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">alu_result[]</text>
+<line x1="1040" y1="194" x2="1046" y2="194" stroke="#000" stroke-width="1.2"/>
+<text x="1035" y="198" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">zero</text>
+<line x1="1040" y1="216" x2="1046" y2="216" stroke="#000" stroke-width="2.6"/>
+<text x="1035" y="220" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">write_data[]</text>
+<rect x="420" y="360" width="200" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="420" y="355" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">load_ext:load_ext_inst</text>
+<line x1="414" y1="384" x2="420" y2="384" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="388" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rd[]</text>
+<line x1="414" y1="406" x2="420" y2="406" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="410" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">funct3[]</text>
+<line x1="414" y1="428" x2="420" y2="428" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="432" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr_lo[]</text>
+<line x1="620" y1="384" x2="626" y2="384" stroke="#000" stroke-width="2.6"/>
+<text x="615" y="388" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">read_data[]</text>
+<text x="520.0" y="459" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">selects byte/half/word, sign- or zero-extends</text>
+<rect x="1240" y="192" width="180" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="1240" y="187" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">store_align:store_align_inst</text>
+<line x1="1234" y1="216" x2="1240" y2="216" stroke="#000" stroke-width="2.6"/>
+<text x="1245" y="220" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">wd[]</text>
+<line x1="1234" y1="238" x2="1240" y2="238" stroke="#000" stroke-width="2.6"/>
+<text x="1245" y="242" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr_lo[]</text>
+<line x1="1234" y1="260" x2="1240" y2="260" stroke="#000" stroke-width="2.6"/>
+<text x="1245" y="264" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">size[]</text>
+<line x1="1420" y1="216" x2="1426" y2="216" stroke="#000" stroke-width="2.6"/>
+<text x="1415" y="220" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">wd_out[]</text>
+<line x1="1420" y1="238" x2="1426" y2="238" stroke="#000" stroke-width="2.6"/>
+<text x="1415" y="242" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">be[]</text>
+<text x="1330.0" y="291" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">replicates byte/half across lanes,</text>
+<text x="1330.0" y="303" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">computes byte enables</text>
+<polygon points="54,76 151,76 160,84 151,92 54,92" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="59" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[31..0]</text>
+<polygon points="26,376 151,376 160,384 151,392 26,392" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="31" y="388" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">read_data[31..0]</text>
+<polygon points="90,492 151,492 160,500 151,508 90,508" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="95" y="504" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<polygon points="90,512 151,512 160,520 151,528 90,528" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="95" y="524" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rst</text>
+<polygon points="1430,20 1439,12 1501,12 1501,28 1439,28" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="24" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">illegal</text>
+<polygon points="1430,40 1439,32 1522,32 1522,48 1439,48" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="44" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">misaligned</text>
+<polygon points="1430,60 1439,52 1515,52 1515,68 1439,68" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="64" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">mem_write</text>
+<polygon points="1430,150 1439,142 1515,142 1515,158 1439,158" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="154" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">pc[31..0]</text>
+<polygon points="1430,172 1439,164 1571,164 1571,180 1439,180" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="176" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_result[31..0]</text>
+<polygon points="1430,216 1439,208 1571,208 1571,224 1439,224" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="220" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">write_data[31..0]</text>
+<polygon points="1430,238 1439,230 1508,230 1508,246 1439,246" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1443" y="242" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">be[3..0]</text>
+<polyline points="160,84 420,84" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="160,84 300,84 300,330 700,330 700,304 820,304" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="160,84 300,84 300,406 420,406" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="160,84 300,84 300,580 1200,580 1200,260 1240,260" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="300" cy="84" r="3.5" fill="#000"/>
+<circle cx="300" cy="330" r="3.5" fill="#000"/>
+<circle cx="300" cy="406" r="3.5" fill="#000"/>
+<text x="310" y="80" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">instr[31..0]</text>
+<text x="410" y="402" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">instr[14..12]</text>
+<text x="1205" y="576" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">instr[13..12]</text>
+<text x="710" y="300" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">instr</text>
+<polyline points="160,384 420,384" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="620,150 820,150" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="720" y="147" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">pc_src</text>
+<polyline points="620,172 820,172" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="720" y="169" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">alu_src</text>
+<polyline points="620,194 820,194" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="720" y="191" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">reg_write</text>
+<polyline points="620,216 820,216" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="720" y="213" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">imm_src</text>
+<polyline points="620,238 820,238" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="720" y="235" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">alu_op</text>
+<polyline points="620,260 820,260" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="720" y="257" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">result_src</text>
+<polyline points="620,282 820,282" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="720" y="279" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#7a0000">jalr</text>
+<polyline points="620,84 640,84 640,20 1430,20" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="620,106 660,106 660,40 1430,40" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="620,128 680,128 680,60 1430,60" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="620,384 740,384 740,326 820,326" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="630" y="380" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">load_data</text>
+<polyline points="160,500 780,500 780,348 820,348" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="160,520 800,520 800,370 820,370" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="1040,150 1430,150" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="1040,172 1430,172" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="1040,172 1080,172 1080,238 1240,238" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="1040,172 1080,172 1080,476 760,476 760,322 340,322 340,106 420,106" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="1040,172 1080,172 1080,476 390,476 390,428 420,428" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="760" cy="476" r="3.5" fill="#000"/>
+<circle cx="1080" cy="238" r="3.5" fill="#000"/>
+<circle cx="1080" cy="172" r="3.5" fill="#000"/>
+<text x="1090" y="168" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">alu_result_int</text>
+<text x="1235" y="234" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">alu_result[1..0]</text>
+<text x="900" y="472" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">alu_result[1..0]</text>
+<polyline points="1040,194 1060,194 1060,312 360,312 360,128 420,128" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="1000" y="308" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">zero</text>
+<polyline points="1040,216 1240,216" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="1100" y="212" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">write_data_raw</text>
+<polyline points="1420,216 1430,216" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="1420,238 1430,238" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+</g></g>
+<g transform="translate(20,1752)">
+<rect x="0" y="0" width="1600" height="760" fill="#fff" stroke="#7a7a7a"/>
+<rect x="0" y="0" width="1600" height="26" fill="#dfe6f0" stroke="#7a7a7a"/>
+<text x="10" y="18" font-size="13" text-anchor="start" font-weight="bold" fill="#000">Page 3 — datapath:datapath_inst</text>
+<text x="1590" y="18" font-size="11" text-anchor="end" font-weight="normal" fill="#333">rtl/datapath.vhd</text>
+<g transform="translate(20,40)">
+<rect x="220" y="60" width="120" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="220" y="55" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">mux2:PCMux</text>
+<line x1="214" y1="84" x2="220" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="225" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d0[]</text>
+<line x1="214" y1="106" x2="220" y2="106" stroke="#000" stroke-width="2.6"/>
+<text x="225" y="110" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d1[]</text>
+<line x1="214" y1="128" x2="220" y2="128" stroke="#000" stroke-width="1.2"/>
+<text x="225" y="132" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">sel</text>
+<line x1="340" y1="84" x2="346" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="335" y="88" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="420" y="60" width="130" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="420" y="55" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">pc_reg:pc_reg_inst</text>
+<line x1="414" y1="84" x2="420" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">next_pc[]</text>
+<line x1="414" y1="106" x2="420" y2="106" stroke="#000" stroke-width="1.2"/>
+<text x="425" y="110" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<line x1="414" y1="128" x2="420" y2="128" stroke="#000" stroke-width="1.2"/>
+<text x="425" y="132" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rst</text>
+<line x1="550" y1="84" x2="556" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="545" y="88" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">pc[]</text>
+<text x="485.0" y="159" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">rising-edge register, sync reset</text>
+<rect x="700" y="60" width="110" height="64" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="700" y="55" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">adder:adder_inst</text>
+<line x1="694" y1="84" x2="700" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">a[]</text>
+<line x1="694" y1="106" x2="700" y2="106" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="110" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">b[]</text>
+<line x1="810" y1="84" x2="816" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="805" y="88" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="860" y="180" width="120" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="860" y="175" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">mux2:target_base_mux</text>
+<line x1="854" y1="204" x2="860" y2="204" stroke="#000" stroke-width="2.6"/>
+<text x="865" y="208" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d0[]</text>
+<line x1="854" y1="226" x2="860" y2="226" stroke="#000" stroke-width="2.6"/>
+<text x="865" y="230" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d1[]</text>
+<line x1="854" y1="248" x2="860" y2="248" stroke="#000" stroke-width="1.2"/>
+<text x="865" y="252" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">sel</text>
+<line x1="980" y1="204" x2="986" y2="204" stroke="#000" stroke-width="2.6"/>
+<text x="975" y="208" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="1060" y="180" width="110" height="64" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="1060" y="175" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">adder:PCTarget</text>
+<line x1="1054" y1="204" x2="1060" y2="204" stroke="#000" stroke-width="2.6"/>
+<text x="1065" y="208" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">a[]</text>
+<line x1="1054" y1="226" x2="1060" y2="226" stroke="#000" stroke-width="2.6"/>
+<text x="1065" y="230" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">b[]</text>
+<line x1="1170" y1="204" x2="1176" y2="204" stroke="#000" stroke-width="2.6"/>
+<text x="1165" y="208" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="1250" y="180" width="110" height="42" fill="#fff8e6" stroke="#000" stroke-width="1.2"/>
+<text x="1250" y="175" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">clear bit 0</text>
+<line x1="1244" y1="204" x2="1250" y2="204" stroke="#000" stroke-width="2.6"/>
+<text x="1255" y="208" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">in[]</text>
+<line x1="1360" y1="204" x2="1366" y2="204" stroke="#000" stroke-width="2.6"/>
+<text x="1355" y="208" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">out[]</text>
+<text x="1305.0" y="235" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">y[31..1] &amp; &#x27;0&#x27;</text>
+<rect x="420" y="300" width="140" height="152" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="420" y="295" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">regfile:regfile_inst</text>
+<line x1="414" y1="324" x2="420" y2="324" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="328" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">ra1[]</text>
+<line x1="414" y1="346" x2="420" y2="346" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="350" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">ra2[]</text>
+<line x1="414" y1="368" x2="420" y2="368" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="372" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">wa[]</text>
+<line x1="414" y1="390" x2="420" y2="390" stroke="#000" stroke-width="1.2"/>
+<text x="425" y="394" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">we</text>
+<line x1="414" y1="412" x2="420" y2="412" stroke="#000" stroke-width="1.2"/>
+<text x="425" y="416" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<line x1="414" y1="434" x2="420" y2="434" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="438" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">wd[]</text>
+<line x1="560" y1="324" x2="566" y2="324" stroke="#000" stroke-width="2.6"/>
+<text x="555" y="328" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">rd1[]</text>
+<line x1="560" y1="346" x2="566" y2="346" stroke="#000" stroke-width="2.6"/>
+<text x="555" y="350" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">rd2[]</text>
+<text x="490.0" y="465" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">x0 hard-wired to 0</text>
+<rect x="420" y="520" width="140" height="64" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="420" y="515" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">extend:extend_inst</text>
+<line x1="414" y1="544" x2="420" y2="544" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="548" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[]</text>
+<line x1="414" y1="566" x2="420" y2="566" stroke="#000" stroke-width="2.6"/>
+<text x="425" y="570" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">imm_src[]</text>
+<line x1="560" y1="544" x2="566" y2="544" stroke="#000" stroke-width="2.6"/>
+<text x="555" y="548" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">imm_ext[]</text>
+<text x="490.0" y="597" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">I/S/B/J immediates</text>
+<rect x="660" y="322" width="110" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="660" y="317" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">mux2:mux2_inst</text>
+<line x1="654" y1="346" x2="660" y2="346" stroke="#000" stroke-width="2.6"/>
+<text x="665" y="350" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d0[]</text>
+<line x1="654" y1="368" x2="660" y2="368" stroke="#000" stroke-width="2.6"/>
+<text x="665" y="372" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d1[]</text>
+<line x1="654" y1="390" x2="660" y2="390" stroke="#000" stroke-width="1.2"/>
+<text x="665" y="394" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">sel</text>
+<line x1="770" y1="346" x2="776" y2="346" stroke="#000" stroke-width="2.6"/>
+<text x="765" y="350" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="860" y="300" width="130" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="860" y="295" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">alu:alu_inst</text>
+<line x1="854" y1="324" x2="860" y2="324" stroke="#000" stroke-width="2.6"/>
+<text x="865" y="328" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">a[]</text>
+<line x1="854" y1="346" x2="860" y2="346" stroke="#000" stroke-width="2.6"/>
+<text x="865" y="350" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">b[]</text>
+<line x1="854" y1="368" x2="860" y2="368" stroke="#000" stroke-width="2.6"/>
+<text x="865" y="372" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_control[]</text>
+<line x1="990" y1="324" x2="996" y2="324" stroke="#000" stroke-width="2.6"/>
+<text x="985" y="328" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">result[]</text>
+<line x1="990" y1="346" x2="996" y2="346" stroke="#000" stroke-width="1.2"/>
+<text x="985" y="350" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">zero</text>
+<rect x="1250" y="300" width="110" height="130" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="1250" y="295" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">mux4:ResultMux</text>
+<line x1="1244" y1="324" x2="1250" y2="324" stroke="#000" stroke-width="2.6"/>
+<text x="1255" y="328" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d0[]</text>
+<line x1="1244" y1="346" x2="1250" y2="346" stroke="#000" stroke-width="2.6"/>
+<text x="1255" y="350" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d2[]</text>
+<line x1="1244" y1="368" x2="1250" y2="368" stroke="#000" stroke-width="2.6"/>
+<text x="1255" y="372" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d3[]</text>
+<line x1="1244" y1="390" x2="1250" y2="390" stroke="#000" stroke-width="2.6"/>
+<text x="1255" y="394" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d1[]</text>
+<line x1="1244" y1="412" x2="1250" y2="412" stroke="#000" stroke-width="2.6"/>
+<text x="1255" y="416" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">sel[]</text>
+<line x1="1360" y1="324" x2="1366" y2="324" stroke="#000" stroke-width="2.6"/>
+<text x="1355" y="328" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<polygon points="80,120 141,120 150,128 141,136 80,136" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="132" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">pc_src</text>
+<polygon points="80,188 141,188 150,196 141,204 80,204" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="200" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rst</text>
+<polygon points="80,208 141,208 150,216 141,224 80,224" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="220" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">clk</text>
+<polygon points="80,240 141,240 150,248 141,256 80,256" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="252" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">jalr</text>
+<polygon points="65,404 141,404 150,412 141,420 65,420" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="70" y="416" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">reg_write</text>
+<polygon points="80,462 141,462 150,470 141,478 80,478" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="474" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr</text>
+<polygon points="79,558 141,558 150,566 141,574 79,574" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="84" y="570" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">imm_src</text>
+<polygon points="79,612 141,612 150,620 141,628 79,628" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="84" y="624" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_src</text>
+<polygon points="80,632 141,632 150,640 141,648 80,648" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="85" y="644" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_op</text>
+<polygon points="65,662 141,662 150,670 141,678 65,678" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="70" y="674" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">read_data</text>
+<polygon points="58,682 141,682 150,690 141,698 58,698" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="63" y="694" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">result_src</text>
+<polygon points="1440,46 1449,38 1510,38 1510,54 1449,54" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1453" y="50" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">pc</text>
+<polygon points="1440,280 1449,272 1532,272 1532,288 1449,288" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1453" y="284" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_result</text>
+<polygon points="1440,262 1449,254 1510,254 1510,270 1449,270" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1453" y="266" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">zero</text>
+<polygon points="1440,600 1449,592 1532,592 1532,608 1449,608" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1453" y="604" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">write_data</text>
+<rect x="608.7" y="98" width="81.3" height="16" fill="#fff" stroke="#000" stroke-dasharray="2,2"/>
+<text x="649.35" y="110" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#000">x&quot;00000004&quot;</text>
+<polyline points="690,106 700,106" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="150,128 220,128" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="340,84 420,84" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="345" y="80" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">pc_next</text>
+<polyline points="150,216 380,216 380,106 420,106" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="150,216 380,216 380,412 420,412" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<circle cx="380" cy="216" r="3" fill="#000"/>
+<polyline points="150,196 395,196 395,128 420,128" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="550,84 700,84" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="550,84 590,84 590,204 860,204" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="550,84 590,84 590,46 1440,46" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="590" cy="84" r="3.5" fill="#000"/>
+<text x="600" y="42" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">pc_int</text>
+<polyline points="810,84 830,84 830,34 200,34 200,84 220,84" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="810,84 830,84 830,150 1200,150 1200,346 1250,346" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="830" cy="84" r="3.5" fill="#000"/>
+<text x="840" y="30" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">pc_plus4</text>
+<text x="1000" y="146" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">pc_plus4</text>
+<polyline points="980,204 1060,204" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="985" y="200" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">target_base</text>
+<polyline points="1170,204 1250,204" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="1175" y="200" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">target_sum</text>
+<polyline points="1360,204 1390,204 1390,18 185,18 185,106 220,106" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="1000" y="14" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">pc_target</text>
+<polyline points="150,248 860,248" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="150,470 300,470 300,324 420,324" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="150,470 300,470 300,346 420,346" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="150,470 300,470 300,368 420,368" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="150,470 300,470 300,544 420,544" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="300" cy="346" r="3.5" fill="#000"/>
+<circle cx="300" cy="368" r="3.5" fill="#000"/>
+<circle cx="300" cy="470" r="3.5" fill="#000"/>
+<text x="415" y="320" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">instr[19..15]</text>
+<text x="415" y="342" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">instr[24..20]</text>
+<text x="415" y="364" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">instr[11..7]</text>
+<text x="415" y="540" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">instr[31..0]</text>
+<polyline points="150,412 340,412 340,390 420,390" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="150,566 420,566" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="560,324 600,324 600,290 820,290 820,324 860,324" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="560,324 600,324 600,290 820,290 820,226 860,226" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="820" cy="290" r="3.5" fill="#000"/>
+<text x="640" y="286" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">rd1</text>
+<polyline points="560,346 660,346" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="560,346 585,346 585,600 1440,600" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="585" cy="346" r="3.5" fill="#000"/>
+<text x="590" y="342" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">rd2</text>
+<text x="1300" y="596" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">write_data</text>
+<polyline points="560,544 615,544 615,368 660,368" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="560,544 1030,544 1030,226 1060,226" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="560,544 1030,544 1030,368 1250,368" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="615" cy="544" r="3.5" fill="#000"/>
+<circle cx="1030" cy="368" r="3.5" fill="#000"/>
+<text x="700" y="540" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">imm_ext</text>
+<polyline points="150,620 640,620 640,390 660,390" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="770,346 860,346" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="778" y="342" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">mux_y</text>
+<polyline points="150,640 840,640 840,368 860,368" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="990,324 1250,324" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="990,324 1010,324 1010,280 1440,280" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="1010" cy="324" r="3.5" fill="#000"/>
+<text x="1040" y="320" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">alu_result_int</text>
+<polyline points="990,346 1000,346 1000,262 1440,262" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="150,670 1215,670 1215,390 1250,390" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="1100" y="666" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">read_data</text>
+<polyline points="150,690 1230,690 1230,412 1250,412" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="1360,324 1400,324 1400,720 390,720 390,434 420,434" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="1300" y="716" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">result</text>
+</g></g>
+<g transform="translate(20,2532)">
+<rect x="0" y="0" width="1600" height="660" fill="#fff" stroke="#7a7a7a"/>
+<rect x="0" y="0" width="1600" height="26" fill="#dfe6f0" stroke="#7a7a7a"/>
+<text x="10" y="18" font-size="13" text-anchor="start" font-weight="bold" fill="#000">Page 4 — controller:controller_inst</text>
+<text x="1590" y="18" font-size="11" text-anchor="end" font-weight="normal" fill="#333">rtl/controller.vhd</text>
+<g transform="translate(20,40)">
+<rect x="300" y="60" width="200" height="262" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="300" y="55" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">control_unit:control_unit_inst</text>
+<line x1="294" y1="84" x2="300" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="305" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[]</text>
+<line x1="500" y1="84" x2="506" y2="84" stroke="#000" stroke-width="2.6"/>
+<text x="495" y="88" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">alu_op[]</text>
+<line x1="500" y1="106" x2="506" y2="106" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="110" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">alu_src</text>
+<line x1="500" y1="128" x2="506" y2="128" stroke="#000" stroke-width="2.6"/>
+<text x="495" y="132" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">imm_src[]</text>
+<line x1="500" y1="150" x2="506" y2="150" stroke="#000" stroke-width="2.6"/>
+<text x="495" y="154" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">result_src[]</text>
+<line x1="500" y1="172" x2="506" y2="172" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="176" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">illegal</text>
+<line x1="500" y1="194" x2="506" y2="194" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="198" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">jalr</text>
+<line x1="500" y1="216" x2="506" y2="216" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="220" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">reg_write</text>
+<line x1="500" y1="238" x2="506" y2="238" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="242" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">mem_write</text>
+<line x1="500" y1="260" x2="506" y2="260" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="264" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">branch</text>
+<line x1="500" y1="282" x2="506" y2="282" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="286" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">jump</text>
+<line x1="500" y1="304" x2="506" y2="304" stroke="#000" stroke-width="1.2"/>
+<text x="495" y="308" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">mem_access</text>
+<text x="400.0" y="335" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">main decoder: case on opcode / funct3 / funct7</text>
+<rect x="620" y="380" width="150" height="86" fill="#fff8e6" stroke="#000" stroke-width="1.2"/>
+<text x="620" y="375" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">misaligned detect</text>
+<line x1="614" y1="404" x2="620" y2="404" stroke="#000" stroke-width="1.2"/>
+<text x="625" y="408" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">mem_access</text>
+<line x1="614" y1="426" x2="620" y2="426" stroke="#000" stroke-width="2.6"/>
+<text x="625" y="430" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">size[]</text>
+<line x1="614" y1="448" x2="620" y2="448" stroke="#000" stroke-width="2.6"/>
+<text x="625" y="452" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr_lo[]</text>
+<line x1="770" y1="404" x2="776" y2="404" stroke="#000" stroke-width="1.2"/>
+<text x="765" y="408" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">mis</text>
+<rect x="920" y="230" width="110" height="64" fill="#fff8e6" stroke="#000" stroke-width="1.2"/>
+<text x="920" y="225" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">a AND NOT b</text>
+<line x1="914" y1="254" x2="920" y2="254" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="258" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">a</text>
+<line x1="914" y1="276" x2="920" y2="276" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="280" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">b</text>
+<line x1="1030" y1="254" x2="1036" y2="254" stroke="#000" stroke-width="1.2"/>
+<text x="1025" y="258" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y</text>
+<rect x="920" y="330" width="110" height="64" fill="#fff8e6" stroke="#000" stroke-width="1.2"/>
+<text x="920" y="325" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">a AND NOT b</text>
+<line x1="914" y1="354" x2="920" y2="354" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="358" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">a</text>
+<line x1="914" y1="376" x2="920" y2="376" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="380" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">b</text>
+<line x1="1030" y1="354" x2="1036" y2="354" stroke="#000" stroke-width="1.2"/>
+<text x="1025" y="358" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y</text>
+<rect x="920" y="440" width="180" height="108" fill="#fff8e6" stroke="#000" stroke-width="1.2"/>
+<text x="920" y="435" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">pc_src logic</text>
+<line x1="914" y1="464" x2="920" y2="464" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="468" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">branch</text>
+<line x1="914" y1="486" x2="920" y2="486" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="490" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">jump</text>
+<line x1="914" y1="508" x2="920" y2="508" stroke="#000" stroke-width="1.2"/>
+<text x="925" y="512" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">zero</text>
+<line x1="914" y1="530" x2="920" y2="530" stroke="#000" stroke-width="2.6"/>
+<text x="925" y="534" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">funct3[]</text>
+<line x1="1100" y1="464" x2="1106" y2="464" stroke="#000" stroke-width="1.2"/>
+<text x="1095" y="468" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">pc_src</text>
+<text x="1010.0" y="561" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">(branch AND (f3(2) XOR zero XOR f3(0))) OR jump</text>
+<text x="20" y="610" font-size="10.5" text-anchor="start" font-weight="normal" fill="#555" font-style="italic">misaligned = mem_access AND ((size=&quot;01&quot; AND addr_lo(0)=&#x27;1&#x27;) OR (size=&quot;10&quot; AND addr_lo/=&quot;00&quot;))  — a misaligned load/store is squashed: neither register nor memory is written.</text>
+<polygon points="54,76 151,76 160,84 151,92 54,92" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="59" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">instr[31..0]</text>
+<polygon points="47,532 151,532 160,540 151,548 47,548" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="52" y="544" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr_lo[1..0]</text>
+<polygon points="90,552 151,552 160,560 151,568 90,568" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="95" y="564" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">zero</text>
+<polygon points="1300,84 1309,76 1370,76 1370,92 1309,92" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="88" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_op</text>
+<polyline points="500,84 1300,84" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polygon points="1300,106 1309,98 1371,98 1371,114 1309,114" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="110" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">alu_src</text>
+<polyline points="500,106 1300,106" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polygon points="1300,128 1309,120 1371,120 1371,136 1309,136" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="132" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">imm_src</text>
+<polyline points="500,128 1300,128" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polygon points="1300,150 1309,142 1392,142 1392,158 1309,158" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="154" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">result_src</text>
+<polyline points="500,150 1300,150" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polygon points="1300,172 1309,164 1371,164 1371,180 1309,180" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="176" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">illegal</text>
+<polyline points="500,172 1300,172" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polygon points="1300,194 1309,186 1370,186 1370,202 1309,202" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="198" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">jalr</text>
+<polyline points="500,194 1300,194" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polygon points="1300,254 1309,246 1385,246 1385,262 1309,262" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="258" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">reg_write</text>
+<polygon points="1300,354 1309,346 1385,346 1385,362 1309,362" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="358" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">mem_write</text>
+<polygon points="1300,412 1309,404 1392,404 1392,420 1309,420" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="416" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">misaligned</text>
+<polygon points="1300,464 1309,456 1370,456 1370,472 1309,472" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1313" y="468" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">pc_src</text>
+<polyline points="160,84 300,84" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="160,84 240,84 240,426 620,426" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="160,84 240,84 240,500 900,500 900,530 920,530" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="240" cy="84" r="3.5" fill="#000"/>
+<circle cx="240" cy="426" r="3.5" fill="#000"/>
+<text x="615" y="422" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">instr[13..12]</text>
+<text x="700" y="496" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">instr[14..12]</text>
+<polyline points="500,216 850,216 850,254 920,254" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="520" y="212" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">reg_write_raw</text>
+<polyline points="500,238 830,238 830,354 920,354" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="520" y="234" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">mem_write_raw</text>
+<polyline points="500,260 810,260 810,464 920,464" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="520" y="256" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">branch</text>
+<polyline points="500,282 790,282 790,486 920,486" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<text x="520" y="278" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">jump</text>
+<polyline points="500,304 580,304 580,404 620,404" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="160,540 600,540 600,448 620,448" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="160,560 860,560 860,508 920,508" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="770,404 880,404 880,276 920,276" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="770,404 880,404 880,376 920,376" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="770,404 880,404 880,412 1300,412" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<circle cx="880" cy="376" r="3" fill="#000"/>
+<circle cx="880" cy="404" r="3" fill="#000"/>
+<text x="780" y="400" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">mis</text>
+<polyline points="1030,254 1300,254" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="1030,354 1300,354" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+<polyline points="1100,464 1300,464" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter"/>
+</g></g>
+<g transform="translate(20,3212)">
+<rect x="0" y="0" width="1600" height="380" fill="#fff" stroke="#7a7a7a"/>
+<rect x="0" y="0" width="1600" height="26" fill="#dfe6f0" stroke="#7a7a7a"/>
+<text x="10" y="18" font-size="13" text-anchor="start" font-weight="bold" fill="#000">Page 5 — load_ext:load_ext_inst</text>
+<text x="1590" y="18" font-size="11" text-anchor="end" font-weight="normal" fill="#333">rtl/load_ext.vhd</text>
+<g transform="translate(20,40)">
+<rect x="340" y="30" width="110" height="130" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="340" y="25" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">mux4:byte_mux</text>
+<line x1="334" y1="54" x2="340" y2="54" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="58" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d0[]</text>
+<line x1="334" y1="76" x2="340" y2="76" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="80" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d1[]</text>
+<line x1="334" y1="98" x2="340" y2="98" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="102" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d2[]</text>
+<line x1="334" y1="120" x2="340" y2="120" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="124" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d3[]</text>
+<line x1="334" y1="142" x2="340" y2="142" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="146" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">sel[]</text>
+<line x1="450" y1="54" x2="456" y2="54" stroke="#000" stroke-width="2.6"/>
+<text x="445" y="58" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="340" y="190" width="110" height="86" fill="#ffffff" stroke="#000" stroke-width="1.2"/>
+<text x="340" y="185" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">mux2:half_word_mux</text>
+<line x1="334" y1="214" x2="340" y2="214" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="218" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d0[]</text>
+<line x1="334" y1="236" x2="340" y2="236" stroke="#000" stroke-width="2.6"/>
+<text x="345" y="240" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">d1[]</text>
+<line x1="334" y1="258" x2="340" y2="258" stroke="#000" stroke-width="1.2"/>
+<text x="345" y="262" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">sel</text>
+<line x1="450" y1="214" x2="456" y2="214" stroke="#000" stroke-width="2.6"/>
+<text x="445" y="218" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">y[]</text>
+<rect x="700" y="30" width="230" height="108" fill="#fff8e6" stroke="#000" stroke-width="1.2"/>
+<text x="700" y="25" font-size="11" text-anchor="start" font-weight="bold" fill="#000080">size select + sign/zero extend</text>
+<line x1="694" y1="54" x2="700" y2="54" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="58" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">byte[]</text>
+<line x1="694" y1="76" x2="700" y2="76" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="80" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">half_word[]</text>
+<line x1="694" y1="98" x2="700" y2="98" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="102" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rd[]</text>
+<line x1="694" y1="120" x2="700" y2="120" stroke="#000" stroke-width="2.6"/>
+<text x="705" y="124" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">funct3[]</text>
+<line x1="930" y1="54" x2="936" y2="54" stroke="#000" stroke-width="2.6"/>
+<text x="925" y="58" font-size="10.5" text-anchor="end" font-weight="normal" fill="#000">read_data[]</text>
+<text x="815.0" y="151" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">size 00 → {24x sign_b, byte}</text>
+<text x="815.0" y="163" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">size 01 → {16x sign_h, half_word}</text>
+<text x="815.0" y="175" font-size="9.5" text-anchor="middle" font-weight="normal" fill="#555" font-style="italic">else → rd ; sign_x = msb AND NOT funct3(2)</text>
+<polygon points="55,262 131,262 140,270 131,278 55,278" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="60" y="274" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">rd[31..0]</text>
+<polygon points="27,282 131,282 140,290 131,298 27,298" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="32" y="294" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">addr_lo[1..0]</text>
+<polygon points="34,312 131,312 140,320 131,328 34,328" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="39" y="324" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">funct3[2..0]</text>
+<polyline points="140,270 220,270 220,54 340,54" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,270 220,270 220,76 340,76" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,270 220,270 220,98 340,98" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,270 220,270 220,120 340,120" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,270 220,270 220,214 340,214" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,270 220,270 220,236 340,236" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,270 220,270 220,10 620,10 620,98 700,98" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="220" cy="120" r="3.5" fill="#000"/>
+<circle cx="220" cy="76" r="3.5" fill="#000"/>
+<circle cx="220" cy="54" r="3.5" fill="#000"/>
+<circle cx="220" cy="214" r="3.5" fill="#000"/>
+<circle cx="220" cy="98" r="3.5" fill="#000"/>
+<circle cx="220" cy="236" r="3.5" fill="#000"/>
+<text x="335" y="50" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">rd[7..0]</text>
+<text x="335" y="72" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">rd[15..8]</text>
+<text x="335" y="94" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">rd[23..16]</text>
+<text x="335" y="116" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">rd[31..24]</text>
+<text x="335" y="210" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">rd[15..0]</text>
+<text x="335" y="232" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">rd[31..16]</text>
+<polyline points="140,290 260,290 260,142 340,142" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="140,290 260,290 260,258 340,258" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<circle cx="260" cy="258" r="3.5" fill="#000"/>
+<text x="335" y="254" font-size="9.5" text-anchor="end" font-weight="normal" fill="#7a0000">addr_lo(1)</text>
+<polyline points="140,320 660,320 660,120 700,120" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<polyline points="450,54 700,54" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="480" y="50" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">byte</text>
+<polyline points="450,214 560,214 560,76 700,76" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+<text x="470" y="210" font-size="9.5" text-anchor="start" font-weight="normal" fill="#7a0000">half_word</text>
+<polygon points="1050,54 1059,46 1184,46 1184,62 1059,62" fill="#e8e8e8" stroke="#000" stroke-width="1"/>
+<text x="1063" y="58" font-size="10.5" text-anchor="start" font-weight="normal" fill="#000">read_data[31..0]</text>
+<polyline points="930,54 1050,54" fill="none" stroke="#000" stroke-width="2.6" stroke-linejoin="miter"/>
+</g></g>
+</svg>

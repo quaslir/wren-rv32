@@ -34,6 +34,7 @@ begin
         variable u13    : std_logic_vector(12 downto 0);
         variable u21    : std_logic_vector(20 downto 0);
         variable jimm   : integer;
+        variable u20    : std_logic_vector(19 downto 0);
         variable exp    : std_logic_vector(31 downto 0);
 
         impure function rnd_word return std_logic_vector is
@@ -148,9 +149,38 @@ begin
         check("J", "011", x"7FFFF0EF", x"000FFFFE", 1048574);
         check("J", "011", x"000FF0EF", x"000FF000", 1044480);
         check("J", "011", x"7FE000EF", x"000007FE", 2046);
+        check("U", "100", x"800002B7", x"80000000", 0);
+        check("U", "100", x"123450B7", x"12345000", 0);
+        check("U", "100", x"FFFFF0B7", x"FFFFF000", 0);
+        check("U", "100", x"00001097", x"00001000", 0);
+        check("U", "100", x"00000FFF", x"00000000", 0);
+        check("U", "100", x"7FFFFFFF", x"7FFFF000", 0);
+
+        for k in 0 to FILLS + 1 loop
+            for bit_i in 0 to 19 loop
+                for inv in 0 to 1 loop
+                    fill := fill_pattern(k, rnd_word);
+                    u20 := (others => '0');
+                    u20(bit_i) := '1';
+                    if inv = 1 then
+                        u20 := not u20;
+                    end if;
+                    v := u20 & fill(11 downto 0);
+                    check("U", "100", v, u20 & x"000", bit_i);
+                end loop;
+            end loop;
+        end loop;
+        for n in 1 to 40000 loop
+            fill := rnd_word;
+            u20 := fill(31 downto 12);
+            if n mod 2 = 0 then
+                fill(11 downto 0) := x"FFF";
+            end if;
+            check("U", "100", fill, u20 & x"000", n);
+        end loop;
 
         if CHECK_UNUSED_ZERO then
-            for src in 4 to 7 loop
+            for src in 5 to 7 loop
                 for n in 1 to 2000 loop
                     v := rnd_word;
                     if n = 1 then
@@ -160,7 +190,7 @@ begin
                 end loop;
             end loop;
         else
-            for src in 4 to 7 loop
+            for src in 5 to 7 loop
                 for n in 1 to 100 loop
                     instr   <= rnd_word;
                     imm_src <= std_logic_vector(to_unsigned(src, 3));

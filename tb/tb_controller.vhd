@@ -16,6 +16,7 @@ architecture sim of tb_controller is
     signal addr_lo    : std_logic_vector(1 downto 0) := "00";
     signal misaligned : std_logic;
     signal jalr       : std_logic;
+    signal alu_src_a  : std_logic;
     signal reg_write  : std_logic;
     signal alu_src    : std_logic;
     signal illegal    : std_logic;
@@ -32,6 +33,8 @@ architecture sim of tb_controller is
     constant OP_S : std_logic_vector(6 downto 0) := "0100011";
     constant OP_J : std_logic_vector(6 downto 0) := "1101111";
     constant OP_JR : std_logic_vector(6 downto 0) := "1100111";
+    constant OP_LUI : std_logic_vector(6 downto 0) := "0110111";
+    constant OP_AUIPC : std_logic_vector(6 downto 0) := "0010111";
 
     type ctrl_t is record
         reg_write   : std_logic;
@@ -49,13 +52,15 @@ architecture sim of tb_controller is
         c_alu_op    : boolean;
         c_imm_src   : boolean;
         c_result    : boolean;
+        alu_src_a   : std_logic;
+        c_srca      : boolean;
     end record;
 
     constant ILLEGAL_CTRL : ctrl_t := (
         reg_write => '0', alu_src => '-', illegal => '1', branch => '0',
         mem_write => '0', mem_access => '0', jump => '0', jalr => '0', alu_op => "----", imm_src => "---",
         result_src => "--", c_alu_src => false, c_alu_op => false,
-        c_imm_src => false, c_result => false
+        c_imm_src => false, c_result => false, alu_src_a => '-', c_srca => false
     );
 
     function ref_ctrl(v : std_logic_vector(31 downto 0)) return ctrl_t is
@@ -66,50 +71,54 @@ architecture sim of tb_controller is
     begin
         if op = OP_R then
             if f7 = "0000000" or (f7 = "0100000" and (f3 = "000" or f3 = "101")) then
-                c := ('1', '0', '0', '0', '0', '0', '0', '0', f7(5) & f3, "---", "00", true, true, false, true);
+                c := ('1', '0', '0', '0', '0', '0', '0', '0', f7(5) & f3, "---", "00", true, true, false, true, '0', true);
             end if;
         elsif op = OP_I then
             if f3 = "001" then
                 if f7 = "0000000" then
-                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "0001", "000", "00", true, true, true, true);
+                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "0001", "000", "00", true, true, true, true, '0', true);
                 end if;
             elsif f3 = "101" then
                 if f7 = "0000000" then
-                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "0101", "000", "00", true, true, true, true);
+                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "0101", "000", "00", true, true, true, true, '0', true);
                 elsif f7 = "0100000" then
-                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "1101", "000", "00", true, true, true, true);
+                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "1101", "000", "00", true, true, true, true, '0', true);
                 end if;
             else
-                c := ('1', '1', '0', '0', '0', '0', '0', '0', '0' & f3, "000", "00", true, true, true, true);
+                c := ('1', '1', '0', '0', '0', '0', '0', '0', '0' & f3, "000", "00", true, true, true, true, '0', true);
             end if;
         elsif op = OP_B then
             case f3 is
                 when "000" | "001" =>
-                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "1000", "010", "--", true, true, true, false);
+                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "1000", "010", "--", true, true, true, false, '0', true);
                 when "100" | "101" =>
-                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "0010", "010", "--", true, true, true, false);
+                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "0010", "010", "--", true, true, true, false, '0', true);
                 when "110" | "111" =>
-                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "0011", "010", "--", true, true, true, false);
+                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "0011", "010", "--", true, true, true, false, '0', true);
                 when others =>
                     null;
             end case;
         elsif op = OP_L then
             case f3 is
                 when "000" | "001" | "010" | "100" | "101" =>
-                    c := ('1', '1', '0', '0', '0', '1', '0', '0', "0000", "000", "01", true, true, true, true);
+                    c := ('1', '1', '0', '0', '0', '1', '0', '0', "0000", "000", "01", true, true, true, true, '0', true);
                 when others =>
                     null;
             end case;
         elsif op = OP_J then
-            c := ('1', '-', '0', '0', '0', '0', '1', '0', "----", "011", "10", false, false, true, true);
+            c := ('1', '-', '0', '0', '0', '0', '1', '0', "----", "011", "10", false, false, true, true, '-', false);
         elsif op = OP_JR then
             if f3 = "000" then
-                c := ('1', '-', '0', '0', '0', '0', '1', '1', "----", "000", "10", false, false, true, true);
+                c := ('1', '-', '0', '0', '0', '0', '1', '1', "----", "000", "10", false, false, true, true, '-', false);
             end if;
+        elsif op = OP_LUI then
+            c := ('1', '-', '0', '0', '0', '0', '0', '0', "----", "100", "11", false, false, true, true, '-', false);
+        elsif op = OP_AUIPC then
+            c := ('1', '1', '0', '0', '0', '0', '0', '0', "0000", "100", "00", true, true, true, true, '1', true);
         elsif op = OP_S then
             case f3 is
                 when "000" | "001" | "010" =>
-                    c := ('0', '1', '0', '0', '1', '1', '0', '0', "0000", "001", "--", true, true, true, false);
+                    c := ('0', '1', '0', '0', '1', '1', '0', '0', "0000", "001", "--", true, true, true, false, '0', true);
                 when others =>
                     null;
             end case;
@@ -166,6 +175,7 @@ begin
             addr_lo    => addr_lo,
             misaligned => misaligned,
             jalr       => jalr,
+            alu_src_a  => alu_src_a,
             reg_write  => reg_write,
             alu_src    => alu_src,
             illegal    => illegal,
@@ -230,6 +240,9 @@ begin
             chk1("pc_src", pc_src, t);
             chk1("misaligned", misaligned, m);
             chk1("jalr", jalr, c.jalr);
+            if c.c_srca then
+                chk1("alu_src_a", alu_src_a, c.alu_src_a);
+            end if;
             if c.jump = '1' then
                 n_jump := n_jump + 1;
             end if;
@@ -252,7 +265,7 @@ begin
                 chkv("result_src", result_src, c.result_src);
             end if;
             checks := checks + 1;
-            if is_x(reg_write & alu_src & illegal & pc_src & alu_op & imm_src & mem_write & result_src & misaligned & jalr) then
+            if is_x(reg_write & alu_src & illegal & pc_src & alu_op & imm_src & mem_write & result_src & misaligned & jalr & alu_src_a) then
                 fail("undefined output");
             end if;
             if c.branch = '1' then

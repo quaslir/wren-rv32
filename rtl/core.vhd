@@ -31,6 +31,7 @@ architecture synth of core is
     signal write_data_raw: std_logic_vector(31 downto 0) := (others => '0');
     signal load_data: std_logic_vector(31 downto 0) := (others => '0');
     signal jalr: std_logic := '0';
+    signal alu_src_a : std_logic := '0';
 begin
 controller_inst : entity work.controller
     port map(
@@ -46,7 +47,8 @@ controller_inst : entity work.controller
         imm_src    => imm_src,
         mem_write  => mem_write,
         result_src => result_src,
-        jalr => jalr
+        jalr => jalr,
+        alu_src_a => alu_src_a
     );
 
     datapath_inst : entity work.datapath
@@ -65,7 +67,8 @@ controller_inst : entity work.controller
             result_src => result_src,
             read_data  => load_data,
             write_data => write_data_raw,
-            jalr => jalr
+            jalr => jalr,
+            alu_src_a => alu_src_a
         );
 store_align_inst : entity work.store_align
     port map(

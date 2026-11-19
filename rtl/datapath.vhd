@@ -15,6 +15,7 @@ entity datapath is
                 result_src: in std_logic_vector(1 downto 0);
         read_data: in std_logic_vector(31 downto 0);
         jalr: in std_logic;
+        alu_src_a: in std_logic;
         alu_result    : out std_logic_vector(31 downto 0);
         zero      : out std_logic;
         pc        : out std_logic_vector(31 downto 0);
@@ -45,10 +46,11 @@ architecture synth of datapath is
     signal alu_result_int: std_logic_vector(31 downto 0) := (others => '0');
     signal target_base: std_logic_vector(31 downto 0) := (others => '0');
     signal target_sum: std_logic_vector(31 downto 0) := (others => '0');
+    signal src_a :std_logic_vector(31 downto 0) := (others => '0');
 begin
     alu_inst : entity work.alu
         port map(
-            a           => rd1,
+            a           => src_a,
             b           => mux_y,
             alu_control => alu_op,
             result      => alu_result_int,
@@ -151,6 +153,17 @@ begin
             );
         
 
+            srca_mux : entity work.mux2
+                generic map(
+                    WIDTH => 32
+                )
+                port map(
+                    d0  => rd1,
+                    d1  => pc_int,
+                    sel => alu_src_a,
+                    y   => src_a
+                );
+            
         
 write_data <= rd2;
 pc <= pc_int;

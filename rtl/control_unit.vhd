@@ -13,6 +13,7 @@ entity control_unit is
         mem_write: out std_logic;
         result_src: out std_logic_vector(1 downto 0);
         mem_access: out std_logic;
+        alu_src_a: out std_logic;
         jump : out std_logic;
         jalr: out std_logic
     );
@@ -38,6 +39,7 @@ begin
         mem_access <= '0';
         jalr <= '0';
         jump <= '0';
+        alu_src_a <= '0';
         case opcode is
             when "0110011" =>
                 if funct7 = "0000000" then
@@ -137,6 +139,15 @@ begin
                 else 
                     illegal <= '1';
                 end if;
+            when "0110111" => -- lui
+                reg_write <= '1';
+                imm_src <= "100";
+                result_src <= "11";
+            when "0010111" => -- auipc
+                reg_write <= '1';
+                imm_src <= "100";
+                alu_src <= '1';
+                alu_src_a <= '1';
             when others =>
                 illegal <= '1';
         end case;
