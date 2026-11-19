@@ -2,7 +2,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 entity cpu is
     generic(
-        INIT_FILE : string := "sw/main.hex"
+        INIT_FILE : string := "sw/main.hex";
+        IMEM_DEPTH: positive := 64;
+        DMEM_DEPTH: positive := 32
     );
     port(
         clk    : in  std_logic;
@@ -43,7 +45,7 @@ core_inst : entity work.core
     instr_mem_inst : entity work.instr_mem
         generic map(
             INIT_FILE => INIT_FILE,
-            DEPTH     => 64
+            DEPTH     => IMEM_DEPTH
         )
         port map(
             addr  => pc,
@@ -52,7 +54,7 @@ core_inst : entity work.core
 
         data_mem_inst : entity work.data_mem
             generic map(
-                DEPTH => 32
+                DEPTH => DMEM_DEPTH
             )
             port map(
                 clk  => clk,

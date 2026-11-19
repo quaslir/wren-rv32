@@ -26,7 +26,7 @@ architecture synth of control_unit is
 
 begin
 
-    process(all)
+    process(opcode, instr)
     begin
         reg_write <= '0';
         alu_src   <= '0';

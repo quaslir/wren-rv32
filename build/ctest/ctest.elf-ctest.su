@@ -1,0 +1,15 @@
+sw/ctest.c:75:14:op_add	0	static
+sw/ctest.c:76:14:op_sub	0	static
+sw/ctest.c:77:14:op_xor	0	static
+sw/ctest.c:5:14:opaque	0	static
+sw/ctest.c:10:14:fib	16	static
+sw/ctest.c:18:14:sum_bytes_signed	16	static
+sw/ctest.c:33:14:sum_bytes_unsigned	16	static
+sw/ctest.c:48:14:sum_halves	32	static
+sw/ctest.c:66:14:mul_div	16	static
+sw/ctest.c:79:14:call_indirect	16	static
+sw/ctest.c:92:14:classify	0	static
+sw/ctest.c:105:14:compares	0	static
+sw/ctest.c:119:19:big_constants	0	static
+sw/ctest.c:128:14:depth	32	static
+sw/ctest.c:139:5:main	32	static

@@ -4,23 +4,32 @@ use ieee.numeric_std.all;
 
 entity tb_cpu_prog is
     generic(
-        PROG       : string := "sw/magic.hex";
-        EXPECTED   : integer := 6765;
-        MAX_CYCLES : natural := 1000
+        PROG          : string   := "sw/main.hex";
+        EXPECTED      : integer  := 6765;
+        IMEM_DEPTH    : positive := 64;
+        DMEM_DEPTH    : positive := 32;
+        MAX_CYCLES    : positive := 400000;
+        ALLOW_ILLEGAL : boolean  := false
     );
 end entity tb_cpu_prog;
 
 architecture sim of tb_cpu_prog is
-    constant CLK_PERIOD : time := 10 ns;
+    constant T          : time := 10 ns;
+    constant HALT_BEQ   : std_logic_vector(31 downto 0) := x"00000063";
+    constant HALT_JAL   : std_logic_vector(31 downto 0) := x"0000006F";
 
     signal clk    : std_logic := '0';
     signal rst    : std_logic := '1';
     signal result : std_logic_vector(31 downto 0);
     signal done   : boolean := false;
 begin
+    clk <= not clk after T / 2 when not done else '0';
+
     dut : entity work.cpu
         generic map(
-            INIT_FILE => PROG
+            INIT_FILE  => PROG,
+            IMEM_DEPTH => IMEM_DEPTH,
+            DMEM_DEPTH => DMEM_DEPTH
         )
         port map(
             clk    => clk,
@@ -28,62 +37,63 @@ begin
             result => result
         );
 
-    clk <= not clk after CLK_PERIOD / 2 when not done;
-
     stim : process
-        alias pc is <<signal .tb_cpu_prog.dut.pc : std_logic_vector(31 downto 0)>>;
-        variable err         : natural := 0;
-        variable cycles      : natural := 0;
-        variable prev_pc     : std_logic_vector(31 downto 0);
-        variable prev_result : std_logic_vector(31 downto 0);
-        variable last_result : std_logic_vector(31 downto 0);
-        variable halted      : boolean := false;
+        alias pc      is <<signal dut.pc      : std_logic_vector(31 downto 0)>>;
+        alias instr   is <<signal dut.instr   : std_logic_vector(31 downto 0)>>;
+        alias illegal is <<signal dut.illegal : std_logic>>;
+        variable cycles  : natural := 0;
+        variable n_ill   : natural := 0;
+        variable last    : std_logic_vector(31 downto 0) := (others => '0');
+        variable have    : boolean := false;
+        variable halted  : boolean := false;
+        variable got     : integer;
     begin
         rst <= '1';
         wait until rising_edge(clk);
         wait until rising_edge(clk);
         wait until falling_edge(clk);
         rst <= '0';
-
-        if pc /= x"00000000" then
-            report "FAIL pc after reset = 0x" & to_hstring(pc) severity error;
-            err := err + 1;
-        end if;
-
-        prev_pc     := pc;
-        prev_result := result;
-        last_result := result;
+        wait for 1 ns;
 
         while cycles < MAX_CYCLES loop
-            wait until falling_edge(clk);
-            cycles := cycles + 1;
-            if pc = prev_pc then
+            if instr = HALT_BEQ or instr = HALT_JAL then
                 halted := true;
                 exit;
             end if;
-            last_result := prev_result;
-            prev_pc     := pc;
-            prev_result := result;
+            if is_x(instr) then
+                report "undefined instruction at pc=0x" & to_hstring(pc) & " after " & integer'image(cycles) & " cycles"
+                    severity failure;
+            end if;
+            if illegal = '1' then
+                n_ill := n_ill + 1;
+                if not ALLOW_ILLEGAL then
+                    report "illegal instruction 0x" & to_hstring(instr) & " at pc=0x" & to_hstring(pc) &
+                           " after " & integer'image(cycles) & " cycles" severity failure;
+                end if;
+            end if;
+            last := result;
+            have := true;
+            cycles := cycles + 1;
+            wait until falling_edge(clk);
+            wait for 1 ns;
         end loop;
 
         if not halted then
-            report "FAIL no halt within " & integer'image(MAX_CYCLES) & " cycles, pc=0x" & to_hstring(pc) severity error;
-            err := err + 1;
-        else
-            report "halt at pc=0x" & to_hstring(pc) & " after " & integer'image(cycles) & " cycles" severity note;
-            report "result before halt = 0x" & to_hstring(last_result) & " (" & integer'image(to_integer(unsigned(last_result))) & ")" severity note;
-            if unsigned(last_result) /= to_unsigned(EXPECTED, 32) then
-                report "FAIL expected " & integer'image(EXPECTED) & " = 0x" & to_hstring(to_unsigned(EXPECTED, 32)) severity error;
-                err := err + 1;
-            end if;
+            report PROG & ": no halt after " & integer'image(MAX_CYCLES) & " cycles, pc=0x" & to_hstring(pc)
+                severity failure;
+        end if;
+        if not have then
+            report PROG & ": halt reached before any instruction executed" severity failure;
         end if;
 
-        if err = 0 then
-            report "tb_cpu_prog: PASSED (" & PROG & ")" severity note;
-        else
-            report "tb_cpu_prog: " & integer'image(err) & " FAILURES (" & PROG & ")" severity failure;
-        end if;
+        got := to_integer(signed(last));
+        report PROG & ": halt at pc=0x" & to_hstring(pc) & " after " & integer'image(cycles) & " cycles, result=" &
+               integer'image(got) & " (0x" & to_hstring(last) & "), expected=" & integer'image(EXPECTED);
+        assert got = EXPECTED
+            report PROG & ": FAILED, result " & integer'image(got) & " /= expected " & integer'image(EXPECTED)
+            severity failure;
+        report PROG & ": PASSED";
         done <= true;
-        wait;
+        std.env.finish;
     end process;
 end architecture sim;

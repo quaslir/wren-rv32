@@ -1,0 +1,3 @@
+tb/tb_cpu.vhd:90:9:@85641ns:(report note): build/ctest/ctest.hex: halt at pc=0x0000000C after 8562 cycles, result=850602818 (0x32B32B42), expected=850602818
+tb/tb_cpu.vhd:95:9:@85641ns:(report note): build/ctest/ctest.hex: PASSED
+simulation finished @85641ns
