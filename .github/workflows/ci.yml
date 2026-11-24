@@ -53,6 +53,12 @@ jobs:
           chmod +x ctest.sh
           ./ctest.sh
  
+      - name: Memory-mapped I/O program on wren (io)
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x ctest.sh io.sh
+          ./io.sh
+ 
       - name: Upload testbench logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -67,6 +73,9 @@ jobs:
         with:
           name: ctest-build
           path: |
+            build/*/*.dis
+            build/*/*.hex
+            build/*/*.log
             build/ctest/*.dis
             build/ctest/*.hex
             build/ctest/*.sym

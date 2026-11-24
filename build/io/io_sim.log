@@ -1,0 +1,3 @@
+tb/tb_cpu_io.vhd:165:9:@201841ns:(report note): tb_cpu_io: 11860 checks, 20182 cycles, worst response 310 cycles, 0 errors
+tb/tb_cpu_io.vhd:168:9:@201841ns:(report note): tb_cpu_io PASSED
+simulation finished @201841ns
