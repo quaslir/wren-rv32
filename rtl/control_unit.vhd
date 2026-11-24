@@ -41,7 +41,7 @@ begin
         jump <= '0';
         alu_src_a <= '0';
         case opcode is
-            when "0110011" =>
+            when "0110011" => 
                 if funct7 = "0000000" then
                     reg_write <= '1';
                     alu_op    <= funct7(5) & funct3;
