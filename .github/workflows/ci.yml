@@ -1,14 +1,14 @@
 name: CI
-
+ 
 on:
   push:
     branches: ['**']
   pull_request:
-
+ 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
+ 
 jobs:
   testbenches:
     runs-on: ubuntu-latest
@@ -17,13 +17,13 @@ jobs:
       GHDL_VERSION: v4.1.0
     steps:
       - uses: actions/checkout@v4
-
+ 
       - name: Install GHDL and RISC-V toolchain from apt
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends ghdl
           sudo apt-get install -y gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf
-
+ 
       - name: Fall back to official GHDL release if apt version < 4.0
         run: |
           major=$(ghdl --version 2>/dev/null | grep -oP 'GHDL \K[0-9]+' | head -1 || true)
@@ -35,24 +35,24 @@ jobs:
             curl -fsSL "$url" | tar -xz -C "$HOME/ghdl" --strip-components=1
             echo "$HOME/ghdl/bin" >> "$GITHUB_PATH"
           fi
-
+ 
       - name: Tool versions
         run: |
           ghdl --version
           riscv64-unknown-elf-gcc --version | head -1
           riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -print-libgcc-file-name
-
+ 
       - name: Run testbenches
         run: |
           chmod +x run_tests.sh
           ./run_tests.sh
-
+ 
       - name: C program on wren (ctest)
         if: ${{ !cancelled() }}
         run: |
           chmod +x ctest.sh
-          CPU_GENERICS="-gIMEM_DEPTH=1024 -gDMEM_DEPTH=1024" ./ctest.sh
-
+          ./ctest.sh
+ 
       - name: Upload testbench logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -60,7 +60,7 @@ jobs:
           name: ghdl-logs
           path: /tmp/*.log
           if-no-files-found: warn
-
+ 
       - name: Upload ctest build
         if: failure()
         uses: actions/upload-artifact@v4
@@ -74,3 +74,4 @@ jobs:
             build/ctest/start.s
             build/ctest/link.ld
           if-no-files-found: warn
+ 

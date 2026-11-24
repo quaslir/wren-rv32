@@ -1,12 +1,12 @@
 #include <stdint.h>
-
+ 
 #define NOINLINE __attribute__((noipa))
-
+ 
 NOINLINE int opaque(int x)
 {
     return x;
 }
-
+ 
 NOINLINE int fib(int n)
 {
     if (n < 2) {
@@ -14,7 +14,7 @@ NOINLINE int fib(int n)
     }
     return fib(n - 1) + fib(n - 2);
 }
-
+ 
 NOINLINE int sum_bytes_signed(int start, int step)
 {
     signed char buf[16];
@@ -29,7 +29,7 @@ NOINLINE int sum_bytes_signed(int start, int step)
     }
     return s;
 }
-
+ 
 NOINLINE int sum_bytes_unsigned(int start, int step)
 {
     unsigned char buf[16];
@@ -44,7 +44,7 @@ NOINLINE int sum_bytes_unsigned(int start, int step)
     }
     return s;
 }
-
+ 
 NOINLINE int sum_halves(int start, int step)
 {
     short sh[8];
@@ -62,7 +62,7 @@ NOINLINE int sum_halves(int start, int step)
     }
     return s;
 }
-
+ 
 NOINLINE int mul_div(int a, int b)
 {
     int p = a * b;
@@ -71,11 +71,11 @@ NOINLINE int mul_div(int a, int b)
     unsigned u = (unsigned)p / 7u;
     return p + q + r + (int)u;
 }
-
+ 
 NOINLINE int op_add(int a, int b) { return a + b; }
 NOINLINE int op_sub(int a, int b) { return a - b; }
 NOINLINE int op_xor(int a, int b) { return a ^ b; }
-
+ 
 NOINLINE int call_indirect(int sel, int a, int b)
 {
     int (*fn)(int, int);
@@ -88,7 +88,7 @@ NOINLINE int call_indirect(int sel, int a, int b)
     }
     return fn(a, b);
 }
-
+ 
 NOINLINE int classify(int x)
 {
     switch (x & 7) {
@@ -101,7 +101,7 @@ NOINLINE int classify(int x)
     default: return 7;
     }
 }
-
+ 
 NOINLINE int compares(int a, int b)
 {
     unsigned ua = (unsigned)a;
@@ -115,7 +115,7 @@ NOINLINE int compares(int a, int b)
     if (a != b) r |= 32;
     return r;
 }
-
+ 
 NOINLINE uint32_t big_constants(uint32_t x)
 {
     x ^= 0x12345678u;
@@ -124,7 +124,18 @@ NOINLINE uint32_t big_constants(uint32_t x)
     x -= 0xDEADBEEFu;
     return x;
 }
-
+ 
+static const unsigned char table[8] = {3, 1, 4, 1, 5, 9, 2, 6};
+static int counter = 1000;
+static int zeroed[4];
+ 
+NOINLINE int globals(int k)
+{
+    counter += table[k & 7];
+    zeroed[k & 3] += counter;
+    return counter + zeroed[0] + zeroed[1] + zeroed[2] + zeroed[3];
+}
+ 
 NOINLINE int depth(int n)
 {
     volatile int local[4];
@@ -135,13 +146,13 @@ NOINLINE int depth(int n)
     }
     return depth(n - 1) + local[0] + local[3];
 }
-
+ 
 int main(void)
 {
     int a = opaque(13);
     int b = opaque(-7);
     uint32_t acc = 0;
-
+ 
     acc = acc * 31u + (uint32_t)fib(12);
     acc = acc * 31u + (uint32_t)sum_bytes_signed(a * 9, 23);
     acc = acc * 31u + (uint32_t)sum_bytes_unsigned(a * 9, 23);
@@ -158,6 +169,10 @@ int main(void)
     acc = acc * 31u + (uint32_t)compares(a, a);
     acc = acc * 31u + big_constants((uint32_t)(a * b));
     acc = acc * 31u + (uint32_t)depth(6);
-
+    for (int i = 0; i < 10; i++) {
+        acc = acc * 31u + (uint32_t)globals(i + a);
+    }
+ 
     return (int)(acc & 0x7FFFFFFFu);
 }
+ 

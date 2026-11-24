@@ -11,11 +11,12 @@
 00000204 g     F .text	00000068 classify
 0000026c g     F .text	00000040 compares
 000002ac g     F .text	00000030 big_constants
-000002dc g     F .text	00000048 depth
-00000324 g     F .text	000001e4 main
-00000508 g     F .text	00000024 .hidden __mulsi3
-0000052c g     F .text	00000084 .hidden __divsi3
-00000534 g     F .text	00000048 .hidden __hidden___udivsi3
-00000534 g     F .text	00000048 .hidden __udivsi3
-0000057c g     F .text	00000010 .hidden __umodsi3
-000005b0 g     F .text	00000030 .hidden __modsi3
+000002dc g     F .text	0000005c globals
+00000338 g     F .text	00000048 depth
+00000380 g     F .text	00000210 main
+00000590 g     F .text	00000024 .hidden __mulsi3
+000005b4 g     F .text	00000084 .hidden __divsi3
+000005bc g     F .text	00000048 .hidden __hidden___udivsi3
+000005bc g     F .text	00000048 .hidden __udivsi3
+00000604 g     F .text	00000010 .hidden __umodsi3
+00000638 g     F .text	00000030 .hidden __modsi3
