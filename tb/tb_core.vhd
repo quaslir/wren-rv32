@@ -26,6 +26,7 @@ architecture sim of tb_core is
     signal write_data : std_logic_vector(31 downto 0);
     signal be         : std_logic_vector(3 downto 0);
     signal misaligned : std_logic;
+    signal irq        : std_logic := '0';
     signal done       : boolean := false;
 
     type regs_t is array (0 to 31) of std_logic_vector(31 downto 0);
@@ -42,6 +43,8 @@ architecture sim of tb_core is
     constant OP_JR   : std_logic_vector(6 downto 0) := "1100111";
     constant OP_LUI  : std_logic_vector(6 downto 0) := "0110111";
     constant OP_AUI  : std_logic_vector(6 downto 0) := "0010111";
+    constant OP_SYS  : std_logic_vector(6 downto 0) := "1110011";
+    constant MRET    : std_logic_vector(31 downto 0) := x"30200073";
 
     function word_of(a : std_logic_vector(31 downto 0)) return natural is
     begin
@@ -185,7 +188,8 @@ begin
             mem_write  => mem_write,
             write_data => write_data,
             be         => be,
-            misaligned => misaligned
+            misaligned => misaligned,
+            irq        => irq
         );
 
     read_data <= dmem(word_of(alu_result)) when word_of(alu_result) < MEM_DEPTH else (others => '0');
@@ -225,6 +229,14 @@ begin
         variable n_lui, n_auipc : natural := 0;
         variable exp         : std_logic_vector(31 downto 0);
         variable kind        : natural;
+        variable c_mie, c_mpie, c_meie : std_logic := '0';
+        variable c_mtvec, c_mepc, c_mcause : std_logic_vector(31 downto 0) := (others => '0');
+        variable c_old, c_new, c_src : std_logic_vector(31 downto 0);
+        variable c_addr      : std_logic_vector(11 downto 0);
+        variable is_csr, is_mret, c_we : boolean;
+        variable ti          : std_logic;
+        variable n_trap, n_csr, n_mret, n_sys_ill : natural := 0;
+        variable tmp         : natural;
 
         impure function rnd(n : positive) return natural is
         begin
@@ -278,6 +290,20 @@ begin
             stores := false;
             mis    := false;
             exp    := (others => '0');
+            is_csr := false;
+            is_mret := false;
+            c_we   := false;
+            c_addr := v(31 downto 20);
+            c_old  := (others => '0');
+            case c_addr is
+                when x"300" => c_old(3) := c_mie; c_old(7) := c_mpie;
+                when x"304" => c_old(11) := c_meie;
+                when x"305" => c_old := c_mtvec;
+                when x"341" => c_old := c_mepc;
+                when x"342" => c_old := c_mcause;
+                when x"344" => c_old(11) := irq;
+                when others => null;
+            end case;
 
             if opcode = OP_R then
                 if f7 = "0000000" or (f7 = "0100000" and (f3 = "000" or f3 = "101")) then
@@ -372,6 +398,50 @@ begin
                 stores := true;
                 imm    := (31 downto 12 => v(31)) & v(31 downto 25) & v(11 downto 7);
                 exp    := ref_alu(regs(rs1), imm, "0000");
+            elsif opcode = OP_SYS and f3 /= "000" and f3 /= "100" then
+                legal  := true;
+                writes := true;
+                is_csr := true;
+                exp    := c_old;
+                if f3(2) = '1' then
+                    c_src := (31 downto 5 => '0') & v(19 downto 15);
+                else
+                    c_src := regs(rs1);
+                end if;
+                case f3(1 downto 0) is
+                    when "01"   => c_new := c_src;
+                    when "10"   => c_new := c_old or c_src;
+                    when others => c_new := c_old and not c_src;
+                end case;
+                c_we := f3(1 downto 0) = "01" or v(19 downto 15) /= "00000";
+            elsif v = MRET then
+                legal   := true;
+                is_mret := true;
+            end if;
+
+            ti := irq and c_meie and c_mie;
+            if ti = '1' then
+                n_trap := n_trap + 1;
+                if pc /= std_logic_vector(m_pc) then
+                    fail("trap: pc got=0x" & to_hstring(pc) & " expected=0x" & to_hstring(m_pc));
+                end if;
+                if illegal /= '0' then
+                    fail("trap: illegal must be squashed");
+                end if;
+                if misaligned /= '0' then
+                    fail("trap: misaligned must be squashed");
+                end if;
+                if mem_write /= '0' then
+                    fail("trap: mem_write must be squashed");
+                end if;
+                wait until rising_edge(clk);
+                c_mepc := std_logic_vector(m_pc(31 downto 2)) & "00";
+                c_mcause := x"8000000B";
+                c_mpie := c_mie;
+                c_mie := '0';
+                m_pc := unsigned(c_mtvec);
+                wait until falling_edge(clk);
+                return;
             end if;
 
             if loads or stores then
@@ -398,7 +468,7 @@ begin
                 if illegal /= '0' then
                     fail("illegal=1 for legal instruction");
                 end if;
-                if not jumps and alu_result /= exp then
+                if not jumps and not is_csr and not is_mret and alu_result /= exp then
                     fail("alu_result got=0x" & to_hstring(alu_result) & " expected=0x" & to_hstring(exp));
                 end if;
                 if stores then
@@ -453,7 +523,25 @@ begin
                 end loop;
                 dmem <= mem;
             end if;
-            if taken and jumps then
+            if is_csr then
+                n_csr := n_csr + 1;
+                if c_we then
+                    case c_addr is
+                        when x"300" => c_mie := c_new(3); c_mpie := c_new(7);
+                        when x"304" => c_meie := c_new(11);
+                        when x"305" => c_mtvec := c_new(31 downto 2) & "00";
+                        when x"341" => c_mepc := c_new(31 downto 2) & "00";
+                        when x"342" => c_mcause := c_new;
+                        when others => null;
+                    end case;
+                end if;
+            end if;
+            if is_mret then
+                n_mret := n_mret + 1;
+                c_mie := c_mpie;
+                c_mpie := '1';
+                m_pc := unsigned(c_mepc);
+            elsif taken and jumps then
                 m_pc := unsigned(target);
             elsif taken then
                 m_pc := m_pc + unsigned(imm);
@@ -533,7 +621,10 @@ begin
         end loop;
         check_mem;
 
+        v := x"305" & "00000" & "001" & "00000" & OP_SYS;
+        step;
         for n in 1 to N_RANDOM loop
+            if rnd(6) = 0 then irq <= '1'; else irq <= '0'; end if;
             kind := rnd(100);
             if kind < 12 then
                 n_lw := n_lw + 1;
@@ -561,7 +652,56 @@ begin
                 end if;
                 step;
                 next;
-            elsif kind < 26 then
+            elsif kind < 32 then
+                case rnd(8) is
+                    when 0 => c_addr := x"300";
+                    when 1 => c_addr := x"304";
+                    when 2 => c_addr := x"305";
+                    when 3 => c_addr := x"341";
+                    when 4 => c_addr := x"342";
+                    when 5 => c_addr := x"344";
+                    when 6 => c_addr := x"340";
+                    when others => c_addr := std_logic_vector(to_unsigned(rnd(4096), 12));
+                end case;
+                case rnd(6) is
+                    when 0 => f3 := "001";
+                    when 1 => f3 := "010";
+                    when 2 => f3 := "011";
+                    when 3 => f3 := "101";
+                    when 4 => f3 := "110";
+                    when others => f3 := "111";
+                end case;
+                if rnd(4) = 0 then tmp := 0; else tmp := rnd(32); end if;
+                v := c_addr & std_logic_vector(to_unsigned(tmp, 5)) & f3 & std_logic_vector(to_unsigned(rnd_reg, 5)) & OP_SYS;
+                step;
+                next;
+            elsif kind < 34 then
+                v := MRET;
+                step;
+                next;
+            elsif kind < 35 then
+                case rnd(5) is
+                    when 0 => v := x"00000073";
+                    when 1 => v := x"00100073";
+                    when 2 => v := x"10500073";
+                    when 3 => v := x"30200473";
+                    when others => v := x"00004073";
+                end case;
+                n_sys_ill := n_sys_ill + 1;
+                step;
+                next;
+            elsif kind < 36 then
+                tmp := 1 + rnd(31);
+                v := enc_u(1, tmp, OP_LUI);
+                step;
+                v := enc_i(-2048, tmp, "000", tmp);
+                step;
+                v := x"304" & std_logic_vector(to_unsigned(tmp, 5)) & "010" & "00000" & OP_SYS;
+                step;
+                v := x"300" & "01000" & "110" & "00000" & OP_SYS;
+                step;
+                next;
+            elsif kind < 38 then
                 if rnd(2) = 1 then
                     v := enc_l(rnd(4 * MEM_DEPTH), 0, BAD_L_F3(rnd(3)), rnd_reg);
                 else
@@ -639,9 +779,12 @@ begin
             step;
         end loop;
 
+        irq <= '0';
         check_regs;
         check_mem;
 
+        report "csr " & integer'image(n_csr) & ", mret " & integer'image(n_mret) & ", traps " & integer'image(n_trap)
+            & ", illegal system " & integer'image(n_sys_ill) severity note;
         report "cycles " & integer'image(cnt) & ": R " & integer'image(n_r) & ", I " & integer'image(n_i)
             & ", branch " & integer'image(n_b) & " (taken " & integer'image(n_taken) & "), load " & integer'image(n_lw)
             & " (lb " & integer'image(n_ld(0)) & ", lh " & integer'image(n_ld(1)) & ", lw " & integer'image(n_ld(2))

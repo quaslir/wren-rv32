@@ -8,6 +8,7 @@ entity cpu is
     port(
         clk    : in  std_logic;
         rst    : in  std_logic;
+        irq: in std_logic;
         sw_in : in std_logic_vector(9 downto 0) := (others => '0');
         result : out std_logic_vector(31 downto 0);
         led : out std_logic_vector(9 downto 0);
@@ -31,22 +32,23 @@ architecture synth of cpu is
     signal io_we: std_logic := '0';
 begin
 
-
-    
 CORE : entity work.core
     port map(
         clk        => clk,
         rst        => rst,
         instr      => instr,
         read_data  => read_data,
+        irq        => irq,
         illegal    => illegal,
         alu_result => alu_result,
         pc         => pc,
         mem_write  => mem_write,
         write_data => write_data,
-        be => be,
+        be         => be,
         misaligned => out_open
     );
+
+    
 
     
     MEM : entity work.ram

@@ -7,6 +7,7 @@ entity core is
         rst : in std_logic;
         instr: in std_logic_vector(31 downto 0);
         read_data: in std_logic_vector(31 downto 0);
+        irq: in std_logic;
         illegal: out std_logic;
         alu_result: out std_logic_vector(31 downto 0);
         pc: out std_logic_vector(31 downto 0);
@@ -24,31 +25,37 @@ architecture synth of core is
     signal alu_op    : std_logic_vector(3 downto 0);
     signal alu_src   : std_logic         :='0';         
     signal imm_src   : std_logic_vector(2 downto 0) := (others => '0');
-    signal pc_src    : std_logic  := '0';              
-    signal result_src: std_logic_vector(1 downto 0) := (others => '0');
+    signal pc_src    : std_logic_vector(1 downto 0)  := (others => '0');              
+    signal result_src: std_logic_vector(2 downto 0) := (others => '0');
     signal zero : std_logic := '0';
     signal alu_result_int : std_logic_vector(31 downto 0) := (others => '0');
     signal write_data_raw: std_logic_vector(31 downto 0) := (others => '0');
     signal load_data: std_logic_vector(31 downto 0) := (others => '0');
     signal jalr: std_logic := '0';
     signal alu_src_a : std_logic := '0';
+    signal take_irq : std_logic := '0';
+    signal csr_we: std_logic := '0';
+    signal mret: std_logic := '0';
 begin
 controller_inst : entity work.controller
     port map(
         instr      => instr,
         zero       => zero,
         addr_lo    => alu_result_int(1 downto 0),
+        take_irq   => take_irq,
         reg_write  => reg_write,
         alu_src    => alu_src,
         illegal    => illegal,
-        pc_src     => pc_src,
         misaligned => misaligned,
+        pc_src     => pc_src,
         alu_op     => alu_op,
         imm_src    => imm_src,
         mem_write  => mem_write,
         result_src => result_src,
-        jalr => jalr,
-        alu_src_a => alu_src_a
+        jalr       => jalr,
+        alu_src_a  => alu_src_a,
+        csr_we     => csr_we,
+        mret       => mret
     );
 
     datapath_inst : entity work.datapath
@@ -61,15 +68,20 @@ controller_inst : entity work.controller
             imm_src    => imm_src,
             alu_op     => alu_op,
             instr      => instr,
+            result_src => result_src,
+            read_data  => load_data,
+            jalr       => jalr,
+            alu_src_a  => alu_src_a,
+            csr_we     => csr_we,
+            mret       => mret,
+            irq        => irq,
             alu_result => alu_result_int,
             zero       => zero,
             pc         => pc,
-            result_src => result_src,
-            read_data  => load_data,
             write_data => write_data_raw,
-            jalr => jalr,
-            alu_src_a => alu_src_a
+            take_irq   => take_irq
         );
+    
 store_align_inst : entity work.store_align
     port map(
         size    => instr(13 downto 12),

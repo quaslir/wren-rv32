@@ -58,6 +58,7 @@ begin
         port map(
             clk    => clk,
             rst    => rst,
+            irq    => '0',
             sw_in  => sw_in,
             result => result,
             led    => led,
@@ -170,4 +171,3 @@ begin
         std.env.finish;
     end process;
 end architecture sim;
- 
