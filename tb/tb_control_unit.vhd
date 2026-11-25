@@ -2,15 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.all;
-
+ 
 entity tb_control_unit is
-    generic(
-        PASSES : positive := 2;
-        SEED1  : positive := 11;
-        SEED2  : positive := 29
-    );
 end entity tb_control_unit;
-
+ 
 architecture sim of tb_control_unit is
     signal instr      : std_logic_vector(31 downto 0) := (others => '0');
     signal reg_write  : std_logic;
@@ -20,445 +15,239 @@ architecture sim of tb_control_unit is
     signal imm_src    : std_logic_vector(2 downto 0);
     signal branch     : std_logic;
     signal mem_write  : std_logic;
-    signal result_src : std_logic_vector(1 downto 0);
+    signal result_src : std_logic_vector(2 downto 0);
     signal mem_access : std_logic;
+    signal alu_src_a  : std_logic;
     signal jump       : std_logic;
     signal jalr       : std_logic;
-    signal alu_src_a  : std_logic;
-
-    constant OP_R : std_logic_vector(6 downto 0) := "0110011";
-    constant OP_I : std_logic_vector(6 downto 0) := "0010011";
-    constant OP_B : std_logic_vector(6 downto 0) := "1100011";
-    constant OP_L : std_logic_vector(6 downto 0) := "0000011";
-    constant OP_S : std_logic_vector(6 downto 0) := "0100011";
-    constant OP_J : std_logic_vector(6 downto 0) := "1101111";
-    constant OP_JR : std_logic_vector(6 downto 0) := "1100111";
-    constant OP_LUI : std_logic_vector(6 downto 0) := "0110111";
-    constant OP_AUIPC : std_logic_vector(6 downto 0) := "0010111";
-
-    type ctrl_t is record
-        reg_write   : std_logic;
-        alu_src     : std_logic;
-        illegal     : std_logic;
-        branch      : std_logic;
-        mem_write   : std_logic;
-        mem_access  : std_logic;
-        jump        : std_logic;
-        jalr        : std_logic;
-        alu_op      : std_logic_vector(3 downto 0);
-        imm_src     : std_logic_vector(2 downto 0);
-        result_src  : std_logic_vector(1 downto 0);
-        c_alu_src   : boolean;
-        c_alu_op    : boolean;
-        c_imm_src   : boolean;
-        c_result    : boolean;
-        alu_src_a   : std_logic;
-        c_srca      : boolean;
+    signal csr_we     : std_logic;
+    signal mret       : std_logic;
+ 
+    type exp_t is record
+        illegal, reg_write, mem_write, branch, jump, jalr, mem_access, csr_we, mret : std_logic;
+        alu_src, alu_src_a : std_logic;
+        alu_op     : std_logic_vector(3 downto 0);
+        imm_src    : std_logic_vector(2 downto 0);
+        result_src : std_logic_vector(2 downto 0);
+        uses_alu, uses_imm : boolean;
     end record;
-
-    constant ILLEGAL_CTRL : ctrl_t := (
-        reg_write => '0', alu_src => '-', illegal => '1', branch => '0',
-        mem_write => '0', mem_access => '0', jump => '0', jalr => '0', alu_op => "----", imm_src => "---",
-        result_src => "--", c_alu_src => false, c_alu_op => false,
-        c_imm_src => false, c_result => false, alu_src_a => '-', c_srca => false
-    );
-
-    function ref_ctrl(v : std_logic_vector(31 downto 0)) return ctrl_t is
-        variable op : std_logic_vector(6 downto 0) := v(6 downto 0);
-        variable f3 : std_logic_vector(2 downto 0) := v(14 downto 12);
-        variable f7 : std_logic_vector(6 downto 0) := v(31 downto 25);
-        variable c  : ctrl_t := ILLEGAL_CTRL;
+ 
+    function decode(i : std_logic_vector(31 downto 0)) return exp_t is
+        variable e : exp_t;
+        variable op : std_logic_vector(6 downto 0) := i(6 downto 0);
+        variable f3 : std_logic_vector(2 downto 0) := i(14 downto 12);
+        variable f7 : std_logic_vector(6 downto 0) := i(31 downto 25);
     begin
-        if op = OP_R then
-            if f7 = "0000000" or (f7 = "0100000" and (f3 = "000" or f3 = "101")) then
-                c := ('1', '0', '0', '0', '0', '0', '0', '0', f7(5) & f3, "---", "00", true, true, false, true, '0', true);
-            end if;
-        elsif op = OP_I then
-            if f3 = "001" then
-                if f7 = "0000000" then
-                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "0001", "000", "00", true, true, true, true, '0', true);
+        e := (illegal => '0', reg_write => '0', mem_write => '0', branch => '0', jump => '0',
+              jalr => '0', mem_access => '0', csr_we => '0', mret => '0', alu_src => '0',
+              alu_src_a => '0', alu_op => "0000", imm_src => "000", result_src => "000",
+              uses_alu => false, uses_imm => false);
+        case op is
+            when "0110011" =>
+                if f7 = "0000000" or (f7 = "0100000" and (f3 = "000" or f3 = "101")) then
+                    e.reg_write := '1'; e.alu_op := f7(5) & f3; e.uses_alu := true;
+                else
+                    e.illegal := '1';
                 end if;
-            elsif f3 = "101" then
-                if f7 = "0000000" then
-                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "0101", "000", "00", true, true, true, true, '0', true);
-                elsif f7 = "0100000" then
-                    c := ('1', '1', '0', '0', '0', '0', '0', '0', "1101", "000", "00", true, true, true, true, '0', true);
+            when "0010011" =>
+                if f3 = "001" and f7 /= "0000000" then
+                    e.illegal := '1';
+                elsif f3 = "101" and f7 /= "0000000" and f7 /= "0100000" then
+                    e.illegal := '1';
+                else
+                    e.reg_write := '1'; e.alu_src := '1'; e.uses_alu := true; e.uses_imm := true;
+                    if f3 = "101" then e.alu_op := i(30) & f3; else e.alu_op := '0' & f3; end if;
                 end if;
-            else
-                c := ('1', '1', '0', '0', '0', '0', '0', '0', '0' & f3, "000", "00", true, true, true, true, '0', true);
-            end if;
-        elsif op = OP_B then
-            case f3 is
-                when "000" | "001" =>
-                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "1000", "010", "--", true, true, true, false, '0', true);
-                when "100" | "101" =>
-                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "0010", "010", "--", true, true, true, false, '0', true);
-                when "110" | "111" =>
-                    c := ('0', '0', '0', '1', '0', '0', '0', '0', "0011", "010", "--", true, true, true, false, '0', true);
-                when others =>
-                    null;
-            end case;
-        elsif op = OP_L then
-            case f3 is
-                when "000" | "001" | "010" | "100" | "101" =>
-                    c := ('1', '1', '0', '0', '0', '1', '0', '0', "0000", "000", "01", true, true, true, true, '0', true);
-                when others =>
-                    null;
-            end case;
-        elsif op = OP_J then
-            c := ('1', '-', '0', '0', '0', '0', '1', '0', "----", "011", "10", false, false, true, true, '-', false);
-        elsif op = OP_JR then
-            if f3 = "000" then
-                c := ('1', '-', '0', '0', '0', '0', '1', '1', "----", "000", "10", false, false, true, true, '-', false);
-            end if;
-        elsif op = OP_LUI then
-            c := ('1', '-', '0', '0', '0', '0', '0', '0', "----", "100", "11", false, false, true, true, '-', false);
-        elsif op = OP_AUIPC then
-            c := ('1', '1', '0', '0', '0', '0', '0', '0', "0000", "100", "00", true, true, true, true, '1', true);
-        elsif op = OP_S then
-            case f3 is
-                when "000" | "001" | "010" =>
-                    c := ('0', '1', '0', '0', '1', '1', '0', '0', "0000", "001", "--", true, true, true, false, '0', true);
-                when others =>
-                    null;
-            end case;
-        end if;
-        return c;
-    end function;
-
-    function enc_r(f7 : std_logic_vector(6 downto 0); f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
-    begin
-        return f7 & "00011" & "00010" & f3 & "00001" & OP_R;
-    end function;
-
-    function enc_i(imm : integer; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
-    begin
-        return std_logic_vector(to_signed(imm, 12)) & "00010" & f3 & "00001" & OP_I;
-    end function;
-
-    function enc_sh(f7 : std_logic_vector(6 downto 0); sh : natural; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
-    begin
-        return f7 & std_logic_vector(to_unsigned(sh, 5)) & "00010" & f3 & "00001" & OP_I;
-    end function;
-
-    function enc_b(f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
-    begin
-        return "0000000" & "00011" & "00010" & f3 & "01000" & OP_B;
-    end function;
-
-    function enc_l(imm : integer; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
-    begin
-        return std_logic_vector(to_signed(imm, 12)) & "00010" & f3 & "00001" & OP_L;
-    end function;
-
-    function enc_s(imm : integer; f3 : std_logic_vector(2 downto 0)) return std_logic_vector is
-        variable u : std_logic_vector(11 downto 0) := std_logic_vector(to_signed(imm, 12));
-    begin
-        return u(11 downto 5) & "00011" & "00010" & f3 & u(4 downto 0) & OP_S;
-    end function;
-
-    type vec_t is record
-        name : string(1 to 12);
-        v    : std_logic_vector(31 downto 0);
-        rw   : std_logic;
-        src  : std_logic;
-        op   : std_logic_vector(3 downto 0);
-        imm  : std_logic_vector(2 downto 0);
-        br   : std_logic;
-        mw   : std_logic;
-        rs   : std_logic_vector(1 downto 0);
-        ma   : std_logic;
-        il   : std_logic;
-        jp   : std_logic;
-        jr   : std_logic;
-        sa   : std_logic;
-    end record;
-    type vec_arr_t is array (natural range <>) of vec_t;
-
-    constant DIRECTED : vec_arr_t := (
-        ("add         ", enc_r("0000000", "000"), '1', '0', "0000", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("sub         ", enc_r("0100000", "000"), '1', '0', "1000", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("sll         ", enc_r("0000000", "001"), '1', '0', "0001", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("slt         ", enc_r("0000000", "010"), '1', '0', "0010", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("sltu        ", enc_r("0000000", "011"), '1', '0', "0011", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("xor         ", enc_r("0000000", "100"), '1', '0', "0100", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("srl         ", enc_r("0000000", "101"), '1', '0', "0101", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("sra         ", enc_r("0100000", "101"), '1', '0', "1101", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("or          ", enc_r("0000000", "110"), '1', '0', "0110", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("and         ", enc_r("0000000", "111"), '1', '0', "0111", "---", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("addi +      ", enc_i(2047, "000"), '1', '1', "0000", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("addi -      ", enc_i(-2048, "000"), '1', '1', "0000", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("addi -1     ", enc_i(-1, "000"), '1', '1', "0000", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("slti -      ", enc_i(-1024, "010"), '1', '1', "0010", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("sltiu -1    ", enc_i(-1, "011"), '1', '1', "0011", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("xori -1     ", enc_i(-1, "100"), '1', '1', "0100", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("ori -       ", enc_i(-1366, "110"), '1', '1', "0110", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("andi -      ", enc_i(-2048, "111"), '1', '1', "0111", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("slli 31     ", enc_sh("0000000", 31, "001"), '1', '1', "0001", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("srli 31     ", enc_sh("0000000", 31, "101"), '1', '1', "0101", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("srai 31     ", enc_sh("0100000", 31, "101"), '1', '1', "1101", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("srai 0      ", enc_sh("0100000", 0, "101"), '1', '1', "1101", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("nop         ", x"00000013", '1', '1', "0000", "000", '0', '0', "00", '0', '0', '0', '0', '0'),
-        ("beq         ", enc_b("000"), '0', '0', "1000", "010", '1', '0', "--", '0', '0', '0', '0', '0'),
-        ("bne         ", enc_b("001"), '0', '0', "1000", "010", '1', '0', "--", '0', '0', '0', '0', '0'),
-        ("blt         ", enc_b("100"), '0', '0', "0010", "010", '1', '0', "--", '0', '0', '0', '0', '0'),
-        ("bge         ", enc_b("101"), '0', '0', "0010", "010", '1', '0', "--", '0', '0', '0', '0', '0'),
-        ("bltu        ", enc_b("110"), '0', '0', "0011", "010", '1', '0', "--", '0', '0', '0', '0', '0'),
-        ("bgeu        ", enc_b("111"), '0', '0', "0011", "010", '1', '0', "--", '0', '0', '0', '0', '0'),
-        ("lb -        ", enc_l(-1, "000"), '1', '1', "0000", "000", '0', '0', "01", '1', '0', '0', '0', '0'),
-        ("lh +        ", enc_l(2046, "001"), '1', '1', "0000", "000", '0', '0', "01", '1', '0', '0', '0', '0'),
-        ("lw -        ", enc_l(-2048, "010"), '1', '1', "0000", "000", '0', '0', "01", '1', '0', '0', '0', '0'),
-        ("lbu +       ", enc_l(3, "100"), '1', '1', "0000", "000", '0', '0', "01", '1', '0', '0', '0', '0'),
-        ("lhu -       ", enc_l(-2, "101"), '1', '1', "0000", "000", '0', '0', "01", '1', '0', '0', '0', '0'),
-        ("sb -        ", enc_s(-1, "000"), '0', '1', "0000", "001", '0', '1', "--", '1', '0', '0', '0', '0'),
-        ("sh +        ", enc_s(2046, "001"), '0', '1', "0000", "001", '0', '1', "--", '1', '0', '0', '0', '0'),
-        ("sw -        ", enc_s(-2048, "010"), '0', '1', "0000", "001", '0', '1', "--", '1', '0', '0', '0', '0'),
-        ("mul         ", enc_r("0000001", "000"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("div         ", enc_r("0000001", "100"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("R f7=0100000", enc_r("0100000", "001"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("R f7=0100000", enc_r("0100000", "111"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("R f7=1000000", enc_r("1000000", "000"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("slli f7 bad ", enc_sh("0100000", 1, "001"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("slli f7 bad ", enc_sh("0000001", 1, "001"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("srli f7 bad ", enc_sh("0000001", 1, "101"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("srai f7 bad ", enc_sh("0110000", 1, "101"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("B f3=010    ", enc_b("010"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("B f3=011    ", enc_b("011"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("load f3=011 ", enc_l(0, "011"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("load f3=110 ", enc_l(0, "110"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("load f3=111 ", enc_l(0, "111"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("store f3=011", enc_s(0, "011"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("store f3=100", enc_s(0, "100"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("store f3=101", enc_s(0, "101"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("store f3=110", enc_s(0, "110"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("store f3=111", enc_s(0, "111"), '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("jal x1,8    ", x"008000EF", '1', '-', "----", "011", '0', '0', "10", '0', '0', '1', '0', '-'),
-        ("jal x0,-4   ", x"FFDFF06F", '1', '-', "----", "011", '0', '0', "10", '0', '0', '1', '0', '-'),
-        ("jal f3 bits ", x"0000706F", '1', '-', "----", "011", '0', '0', "10", '0', '0', '1', '0', '-'),
-        ("jal all ones", x"FFFFFFEF", '1', '-', "----", "011", '0', '0', "10", '0', '0', '1', '0', '-'),
-        ("jalr ret    ", x"00008067", '1', '-', "----", "000", '0', '0', "10", '0', '0', '1', '1', '-'),
-        ("jalr x1,-1  ", x"FFF080E7", '1', '-', "----", "000", '0', '0', "10", '0', '0', '1', '1', '-'),
-        ("jalr f3=001 ", x"000090E7", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("jalr f3=111 ", x"0000F0E7", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("lui 0x80000 ", x"800002B7", '1', '-', "----", "100", '0', '0', "11", '0', '0', '0', '0', '-'),
-        ("lui f3 bits ", x"1234F0B7", '1', '-', "----", "100", '0', '0', "11", '0', '0', '0', '0', '-'),
-        ("auipc 1     ", x"00001097", '1', '1', "0000", "100", '0', '0', "00", '0', '0', '0', '0', '1'),
-        ("auipc -1    ", x"FFFFF117", '1', '1', "0000", "100", '0', '0', "00", '0', '0', '0', '0', '1'),
-        ("auipc f3 bit", x"00007097", '1', '1', "0000", "100", '0', '0', "00", '0', '0', '0', '0', '1'),
-        ("fence       ", x"0FF0000F", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("ecall       ", x"00000073", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("ebreak      ", x"00100073", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("zero word   ", x"00000000", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("all ones    ", x"FFFFFFFF", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-'),
-        ("custom-0    ", x"0000000B", '0', '-', "----", "---", '0', '0', "--", '0', '1', '0', '0', '-')
-    );
-
-    function std_match_v(got, exp : std_logic_vector) return boolean is
-    begin
-        for i in got'range loop
-            if exp(i) /= '-' and got(i) /= exp(i) then
-                return false;
-            end if;
-        end loop;
-        return true;
+            when "1100011" =>
+                case f3 is
+                    when "000" | "001" => e.alu_op := "1000";
+                    when "100" | "101" => e.alu_op := "0010";
+                    when "110" | "111" => e.alu_op := "0011";
+                    when others => e.illegal := '1';
+                end case;
+                if e.illegal = '0' then
+                    e.branch := '1'; e.imm_src := "010"; e.uses_alu := true; e.uses_imm := true;
+                end if;
+            when "0000011" =>
+                if f3 = "011" or f3 = "110" or f3 = "111" then
+                    e.illegal := '1';
+                else
+                    e.reg_write := '1'; e.alu_src := '1'; e.result_src := "001"; e.mem_access := '1';
+                    e.uses_alu := true; e.uses_imm := true;
+                end if;
+            when "0100011" =>
+                if f3 = "000" or f3 = "001" or f3 = "010" then
+                    e.mem_write := '1'; e.alu_src := '1'; e.imm_src := "001"; e.mem_access := '1';
+                    e.uses_alu := true; e.uses_imm := true;
+                else
+                    e.illegal := '1';
+                end if;
+            when "1101111" =>
+                e.reg_write := '1'; e.jump := '1'; e.imm_src := "011"; e.result_src := "010"; e.uses_imm := true;
+            when "1100111" =>
+                if f3 = "000" then
+                    e.reg_write := '1'; e.jump := '1'; e.jalr := '1'; e.result_src := "010"; e.uses_imm := true;
+                else
+                    e.illegal := '1';
+                end if;
+            when "0110111" =>
+                e.reg_write := '1'; e.imm_src := "100"; e.result_src := "011"; e.uses_imm := true;
+            when "0010111" =>
+                e.reg_write := '1'; e.imm_src := "100"; e.alu_src := '1'; e.alu_src_a := '1';
+                e.uses_alu := true; e.uses_imm := true;
+            when "1110011" =>
+                case f3 is
+                    when "001" | "010" | "011" | "101" | "110" | "111" =>
+                        e.reg_write := '1'; e.result_src := "100";
+                        if f3(1 downto 0) = "01" or i(19 downto 15) /= "00000" then
+                            e.csr_we := '1';
+                        end if;
+                    when "000" =>
+                        if i = x"30200073" then e.mret := '1'; else e.illegal := '1'; end if;
+                    when others =>
+                        e.illegal := '1';
+                end case;
+            when others =>
+                e.illegal := '1';
+        end case;
+        return e;
     end function;
 begin
-    dut : entity work.control_unit
-        port map(
-            instr      => instr,
-            reg_write  => reg_write,
-            alu_op     => alu_op,
-            alu_src    => alu_src,
-            illegal    => illegal,
-            imm_src    => imm_src,
-            branch     => branch,
-            mem_write  => mem_write,
-            result_src => result_src,
-            mem_access => mem_access,
-            jump       => jump,
-            jalr       => jalr,
-            alu_src_a  => alu_src_a
-        );
-
-    stim : process
-        variable errors  : natural := 0;
-        variable checks  : natural := 0;
-        variable n_legal : natural := 0;
-        variable n_ill   : natural := 0;
-        variable s1      : positive := SEED1;
-        variable s2      : positive := SEED2;
-        variable r       : real;
-        variable v       : std_logic_vector(31 downto 0);
-        variable c       : ctrl_t;
-
-        impure function rnd5 return std_logic_vector is
+    dut: entity work.control_unit
+        port map(instr => instr, reg_write => reg_write, alu_op => alu_op, alu_src => alu_src,
+                 illegal => illegal, imm_src => imm_src, branch => branch, mem_write => mem_write,
+                 result_src => result_src, mem_access => mem_access, alu_src_a => alu_src_a,
+                 jump => jump, jalr => jalr, csr_we => csr_we, mret => mret);
+ 
+    stim: process
+        variable errors, checks : natural := 0;
+        variable s1, s2 : positive := 7;
+        variable r : real;
+        variable v : std_logic_vector(31 downto 0);
+ 
+        impure function rnd_slv(w : positive) return std_logic_vector is
+            variable x : std_logic_vector(w - 1 downto 0);
         begin
-            uniform(s1, s2, r);
-            return std_logic_vector(to_unsigned(integer(trunc(r * 32.0)) mod 32, 5));
+            for k in x'range loop
+                uniform(s1, s2, r);
+                if r < 0.5 then x(k) := '0'; else x(k) := '1'; end if;
+            end loop;
+            return x;
         end function;
-
-        procedure fail(tag : string; msg : string) is
-        begin
-            errors := errors + 1;
-            if errors <= 30 then
-                report tag & " instr=0x" & to_hstring(instr) & ": " & msg severity error;
-            end if;
-        end procedure;
-
-        procedure chk1(tag, name : string; got, exp : std_logic) is
+ 
+        procedure chk(ok : boolean; what : string) is
         begin
             checks := checks + 1;
-            if exp /= '-' and got /= exp then
-                fail(tag, name & " got=" & std_logic'image(got) & " expected=" & std_logic'image(exp));
+            if not ok then
+                errors := errors + 1;
+                if errors <= 20 then
+                    report "instr=" & to_hstring(instr) & ": " & what severity error;
+                end if;
             end if;
         end procedure;
-
-        procedure chkv(tag, name : string; got, exp : std_logic_vector) is
+ 
+        procedure bit_chk(got, exp : std_logic; name : string) is
         begin
-            checks := checks + 1;
-            if not std_match_v(got, exp) then
-                fail(tag, name & " got=" & to_string(got) & " expected=" & to_string(exp));
-            end if;
+            chk(got = exp, name & " got " & std_logic'image(got) & " exp " & std_logic'image(exp));
         end procedure;
-
-        procedure check_defined(tag : string) is
+ 
+        procedure apply(x : std_logic_vector(31 downto 0)) is
+            variable e : exp_t;
         begin
-            checks := checks + 1;
-            if is_x(reg_write & alu_op & alu_src & illegal & imm_src & branch & mem_write & result_src & mem_access & jump & jalr & alu_src_a) then
-                fail(tag, "undefined output: rw=" & std_logic'image(reg_write) & " op=" & to_string(alu_op) &
-                     " src=" & std_logic'image(alu_src) & " il=" & std_logic'image(illegal) &
-                     " imm=" & to_string(imm_src) & " br=" & std_logic'image(branch) &
-                     " mw=" & std_logic'image(mem_write) & " rs=" & to_string(result_src) &
-                     " ma=" & std_logic'image(mem_access) & " jp=" & std_logic'image(jump) &
-                     " jr=" & std_logic'image(jalr));
+            instr <= x;
+            wait for 1 ns;
+            e := decode(x);
+            bit_chk(illegal, e.illegal, "illegal");
+            bit_chk(reg_write, e.reg_write, "reg_write");
+            bit_chk(mem_write, e.mem_write, "mem_write");
+            bit_chk(branch, e.branch, "branch");
+            bit_chk(jump, e.jump, "jump");
+            bit_chk(jalr, e.jalr, "jalr");
+            bit_chk(mem_access, e.mem_access, "mem_access");
+            bit_chk(csr_we, e.csr_we, "csr_we");
+            bit_chk(mret, e.mret, "mret");
+            if e.reg_write = '1' then
+                chk(result_src = e.result_src, "result_src got " & to_string(result_src) & " exp " & to_string(e.result_src));
             end if;
-        end procedure;
-
-        procedure check_invariants(tag : string) is
-        begin
-            checks := checks + 1;
-            if illegal = '1' and (reg_write = '1' or mem_write = '1' or branch = '1' or mem_access = '1' or jump = '1' or jalr = '1') then
-                fail(tag, "illegal instruction has side effects");
+            if e.uses_imm then
+                chk(imm_src = e.imm_src, "imm_src got " & to_string(imm_src) & " exp " & to_string(e.imm_src));
             end if;
-            if mem_write = '1' and mem_access = '0' then
-                fail(tag, "mem_write=1 without mem_access");
+            if e.uses_alu then
+                chk(alu_op = e.alu_op, "alu_op got " & to_string(alu_op) & " exp " & to_string(e.alu_op));
+                bit_chk(alu_src, e.alu_src, "alu_src");
+                bit_chk(alu_src_a, e.alu_src_a, "alu_src_a");
             end if;
-            if mem_write = '1' and reg_write = '1' then
-                fail(tag, "store writes register");
-            end if;
-            if branch = '1' and (reg_write = '1' or mem_write = '1' or mem_access = '1') then
-                fail(tag, "branch has side effects");
-            end if;
-            if jalr = '1' and jump = '0' then
-                fail(tag, "jalr=1 without jump");
-            end if;
-            if jump = '1' and (branch = '1' or mem_write = '1' or mem_access = '1') then
-                fail(tag, "jump combined with branch or memory access");
-            end if;
-            if jump = '1' and (reg_write = '0' or result_src /= "10") then
-                fail(tag, "jump does not write pc+4");
-            end if;
-            if mem_access = '1' and alu_src /= '1' then
-                fail(tag, "memory access without immediate operand");
-            end if;
-            if mem_access = '1' and alu_op /= "0000" then
-                fail(tag, "memory address not computed with ADD");
-            end if;
-            if reg_write = '1' and result_src = "01" and mem_access = '0' then
-                fail(tag, "load result selected without mem_access");
-            end if;
-        end procedure;
-
-        procedure check_ref(tag : string) is
-        begin
-            c := ref_ctrl(instr);
-            chk1(tag, "reg_write", reg_write, c.reg_write);
-            chk1(tag, "illegal", illegal, c.illegal);
-            chk1(tag, "branch", branch, c.branch);
-            chk1(tag, "mem_write", mem_write, c.mem_write);
-            chk1(tag, "mem_access", mem_access, c.mem_access);
-            chk1(tag, "jump", jump, c.jump);
-            chk1(tag, "jalr", jalr, c.jalr);
-            if c.c_srca then
-                chk1(tag, "alu_src_a", alu_src_a, c.alu_src_a);
-            end if;
-            if c.c_alu_src then
-                chk1(tag, "alu_src", alu_src, c.alu_src);
-            end if;
-            if c.c_alu_op then
-                chkv(tag, "alu_op", alu_op, c.alu_op);
-            end if;
-            if c.c_imm_src then
-                chkv(tag, "imm_src", imm_src, c.imm_src);
-            end if;
-            if c.c_result then
-                chkv(tag, "result_src", result_src, c.result_src);
-            end if;
-            check_defined(tag);
-            check_invariants(tag);
-            if c.illegal = '1' then
-                n_ill := n_ill + 1;
-            else
-                n_legal := n_legal + 1;
-            end if;
+            chk(not (jalr = '1' and jump = '0'), "invariant jalr => jump");
+            chk(not (jump = '1' and (reg_write = '0' or result_src /= "010")), "invariant jump => rd <- pc+4");
+            chk(not (csr_we = '1' and result_src /= "100"), "invariant csr_we => result_src 100");
+            chk(not (mret = '1' and (reg_write = '1' or jump = '1' or branch = '1' or mem_write = '1' or csr_we = '1')),
+                "invariant mret has no other effects");
+            chk(not (illegal = '1' and (reg_write = '1' or mem_write = '1' or branch = '1' or jump = '1'
+                                        or mem_access = '1' or csr_we = '1' or mret = '1')),
+                "invariant illegal has no effects");
+            chk(not (mem_write = '1' and mem_access = '0'), "invariant mem_write => mem_access");
+            chk(not (result_src = "001" and reg_write = '1' and mem_access = '0'), "invariant load result => mem_access");
         end procedure;
     begin
-        for k in DIRECTED'range loop
-            instr <= DIRECTED(k).v;
-            wait for 1 ns;
-            chk1(DIRECTED(k).name, "reg_write", reg_write, DIRECTED(k).rw);
-            chk1(DIRECTED(k).name, "alu_src", alu_src, DIRECTED(k).src);
-            chkv(DIRECTED(k).name, "alu_op", alu_op, DIRECTED(k).op);
-            chkv(DIRECTED(k).name, "imm_src", imm_src, DIRECTED(k).imm);
-            chk1(DIRECTED(k).name, "branch", branch, DIRECTED(k).br);
-            chk1(DIRECTED(k).name, "mem_write", mem_write, DIRECTED(k).mw);
-            chkv(DIRECTED(k).name, "result_src", result_src, DIRECTED(k).rs);
-            chk1(DIRECTED(k).name, "mem_access", mem_access, DIRECTED(k).ma);
-            chk1(DIRECTED(k).name, "illegal", illegal, DIRECTED(k).il);
-            chk1(DIRECTED(k).name, "jump", jump, DIRECTED(k).jp);
-            chk1(DIRECTED(k).name, "jalr", jalr, DIRECTED(k).jr);
-            chk1(DIRECTED(k).name, "alu_src_a", alu_src_a, DIRECTED(k).sa);
-            check_defined(DIRECTED(k).name);
-            check_invariants(DIRECTED(k).name);
-        end loop;
-
-        for p in 1 to PASSES loop
-            for op in 0 to 127 loop
-                for f3 in 0 to 7 loop
-                    for f7 in 0 to 127 loop
-                        v := std_logic_vector(to_unsigned(f7, 7)) & rnd5 & rnd5 &
-                             std_logic_vector(to_unsigned(f3, 3)) & rnd5 &
-                             std_logic_vector(to_unsigned(op, 7));
-                        instr <= v;
-                        wait for 1 ns;
-                        check_ref("exhaustive");
+        for op in 0 to 127 loop
+            for f3 in 0 to 7 loop
+                for f7 in 0 to 127 loop
+                    for k in 0 to 2 loop
+                        v := rnd_slv(32);
+                        v(6 downto 0) := std_logic_vector(to_unsigned(op, 7));
+                        v(14 downto 12) := std_logic_vector(to_unsigned(f3, 3));
+                        v(31 downto 25) := std_logic_vector(to_unsigned(f7, 7));
+                        if k = 0 then v(19 downto 15) := "00000"; end if;
+                        apply(v);
                     end loop;
                 end loop;
             end loop;
         end loop;
-
-        for op in 0 to 127 loop
-            for f3 in 0 to 7 loop
-                for f7 in 0 to 127 loop
-                    v := std_logic_vector(to_unsigned(f7, 7)) & "11111" & "11111" &
-                         std_logic_vector(to_unsigned(f3, 3)) & "11111" &
-                         std_logic_vector(to_unsigned(op, 7));
-                    instr <= v;
-                    wait for 1 ns;
-                    check_ref("fields=1");
-                    v(24 downto 15) := (others => '0');
-                    v(11 downto 7)  := (others => '0');
-                    instr <= v;
-                    wait for 1 ns;
-                    check_ref("fields=0");
+ 
+        for f3 in 0 to 7 loop
+            for rs1 in 0 to 31 loop
+                for k in 0 to 15 loop
+                    v := rnd_slv(32);
+                    v(6 downto 0) := "1110011";
+                    v(14 downto 12) := std_logic_vector(to_unsigned(f3, 3));
+                    v(19 downto 15) := std_logic_vector(to_unsigned(rs1, 5));
+                    apply(v);
                 end loop;
             end loop;
         end loop;
-
-        report "tb_control_unit: " & integer'image(checks) & " checks (" & integer'image(n_legal) &
-               " legal, " & integer'image(n_ill) & " illegal vectors), " & integer'image(errors) & " errors";
-        assert errors = 0 report "tb_control_unit FAILED" severity failure;
-        report "tb_control_unit PASSED";
-        std.env.finish;
+ 
+        apply(x"30200073");
+        apply(x"00000073");
+        apply(x"00100073");
+        apply(x"10500073");
+        apply(x"10200073");
+        apply(x"30200473");
+        for b in 0 to 31 loop
+            v := x"30200073";
+            v(b) := not v(b);
+            apply(v);
+        end loop;
+        apply(x"34002573");
+        apply(x"30046073");
+        apply(x"30047073");
+        apply(x"30001073");
+        apply(x"30002073");
+        apply(x"30003073");
+        apply(x"30005073");
+        apply(x"30006073");
+        apply(x"30007073");
+ 
+        for n in 1 to 200000 loop
+            apply(rnd_slv(32));
+        end loop;
+ 
+        if errors = 0 then
+            report "tb_control_unit: PASS (" & integer'image(checks) & " checks)" severity note;
+        else
+            report "tb_control_unit: FAIL (" & integer'image(errors) & " of " & integer'image(checks) & ")" severity error;
+        end if;
+        std.env.stop;
+        wait;
     end process;
 end architecture sim;
+ 
