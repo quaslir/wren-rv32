@@ -11,11 +11,13 @@ entity control_unit is
         imm_src   : out std_logic_vector(2 downto 0);
         branch    : out std_logic;
         mem_write: out std_logic;
-        result_src: out std_logic_vector(1 downto 0);
+        result_src: out std_logic_vector(2 downto 0);
         mem_access: out std_logic;
         alu_src_a: out std_logic;
         jump : out std_logic;
-        jalr: out std_logic
+        jalr: out std_logic;
+        csr_we: out std_logic;
+        mret: out std_logic
     );
 end entity control_unit;
 
@@ -35,11 +37,13 @@ begin
         imm_src   <= "000";
         branch    <= '0';
         mem_write <= '0';
-        result_src <= "00";
+        result_src <= "000";
         mem_access <= '0';
         jalr <= '0';
         jump <= '0';
         alu_src_a <= '0';
+        csr_we <= '0';
+        mret <= '0';
         case opcode is
             when "0110011" => 
                 if funct7 = "0000000" then
@@ -109,7 +113,7 @@ begin
                         reg_write <= '1';
                         alu_src <= '1';
                         imm_src <= "000";
-                        result_src <= "01";
+                        result_src <= "001";
                         alu_op <= "0000";
                         mem_access <= '1';
                     when others => illegal <= '1';
@@ -126,14 +130,14 @@ begin
                 end case;
             when "1101111" => -- jal
                 imm_src <= "011";
-                result_src <= "10";
+                result_src <= "010";
                 jump <= '1';
                 reg_write <= '1';
             when "1100111" => -- jalr
                 if funct3 = "000" then
                 jalr <= '1';
                 jump <= '1';
-                result_src <= "10";
+                result_src <= "010";
                 alu_src <= '1';
                 reg_write <= '1';
                 else 
@@ -142,12 +146,30 @@ begin
             when "0110111" => -- lui
                 reg_write <= '1';
                 imm_src <= "100";
-                result_src <= "11";
+                result_src <= "011";
             when "0010111" => -- auipc
                 reg_write <= '1';
                 imm_src <= "100";
                 alu_src <= '1';
                 alu_src_a <= '1';
+            when "1110011" => -- interrupts
+                case funct3 is
+                when "001" | "010" | "011" | "101" | "110" | "111" =>
+                    reg_write <= '1';
+                    result_src <= "100";
+                    csr_we <= '1' when funct3(1 downto 0) = "01" or instr(19 downto 15) /= "00000" 
+                    else '0';
+                    
+                    when "000" =>
+                     case instr is
+                        when x"30200073" => mret <= '1';
+                        when others => illegal <= '1';
+                     end case;
+                     
+
+                    when others => illegal <= '1';
+                end case;
+                
             when others =>
                 illegal <= '1';
         end case;
