@@ -8,7 +8,7 @@ entity cpu is
     port(
         clk    : in  std_logic;
         rst    : in  std_logic;
-        irq: in std_logic;
+        btn: in std_logic;
         sw_in : in std_logic_vector(9 downto 0) := (others => '0');
         result : out std_logic_vector(31 downto 0);
         led : out std_logic_vector(9 downto 0);
@@ -30,6 +30,7 @@ architecture synth of cpu is
     signal read_data: std_logic_vector(31 downto 0) := (others => '0');
     signal io_rd: std_logic_vector(31 downto 0) := (others => '0');
     signal io_we: std_logic := '0';
+    signal irq: std_logic := '0';
 begin
 
 CORE : entity work.core
@@ -66,6 +67,7 @@ CORE : entity work.core
             rd     => ram_rd,
             rd_a   => instr
         );
+
     mmio_inst : entity work.mmio
         port map(
             clk   => clk,
@@ -75,9 +77,11 @@ CORE : entity work.core
             wd    => write_data,
             be    => be,
             sw_in => sw_in,
+            btn   => btn,
             rd    => io_rd,
             led   => led,
-            hex   => hex
+            hex   => hex,
+            irq   => irq
         );
     
 ram_we <= mem_write and not alu_result(31);

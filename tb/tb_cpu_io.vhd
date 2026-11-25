@@ -58,7 +58,7 @@ begin
         port map(
             clk    => clk,
             rst    => rst,
-            irq    => '0',
+            btn    => '0',
             sw_in  => sw_in,
             result => result,
             led    => led,

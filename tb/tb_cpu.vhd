@@ -28,7 +28,7 @@ begin
         port map(
             clk    => clk,
             rst    => rst,
-            irq    => '0',
+            btn    => '0',
             result => result
         );
     stim : process

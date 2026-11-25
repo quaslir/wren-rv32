@@ -2,11 +2,15 @@
 # Runs every testbench in tb/ with GHDL (VHDL-2008).
 # Exit code is non-zero if analysis fails or any testbench fails.
 # Logs: $LOG_DIR/<name>.log (default /tmp).
+# Program testbenches (tb_cpu_io, tb_cpu_irq) need a compiled hex and EXPECTED:
+# they are run by io.sh and irq.sh, not here.
 set -uo pipefail   # no -e: failures are counted, not fatal
 cd "$(dirname "$0")"
 
 LOG_DIR="${LOG_DIR:-/tmp}"
 mkdir -p "$LOG_DIR"
+
+SKIP=(tb_cpu_prog tb_cpu_io tb_cpu_irq)
 
 rm -f work-obj08.cf
 if ! ghdl -i --std=08 rtl/*.vhd tb/*.vhd; then
@@ -40,8 +44,19 @@ run() {
     fi
 }
 
+skipped() {
+    local x
+    for x in "${SKIP[@]}"; do
+        [ "$x" = "$1" ] && return 0
+    done
+    return 1
+}
+
 for tb in $(grep -hoP '^entity\s+\K\w+' tb/*.vhd); do
-    [ "$tb" = tb_cpu_prog ] && continue
+    if skipped "$tb"; then
+        echo "SKIP  $tb"
+        continue
+    fi
     run "$tb" "$tb"
 done
 
