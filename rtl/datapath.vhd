@@ -6,22 +6,25 @@ entity datapath is
     port(
         clk       : in  std_logic;
         rst       : in  std_logic;
-        pc_src    : in  std_logic;
+        pc_src    : in  std_logic_vector(1 downto 0);
         alu_src   : in  std_logic;
         reg_write : in  std_logic;
         imm_src   : in  std_logic_vector(2 downto 0);
         alu_op    : in  std_logic_vector(3 downto 0);
         instr     : in  std_logic_vector(31 downto 0);
-                result_src: in std_logic_vector(1 downto 0);
+                result_src: in std_logic_vector(2 downto 0);
         read_data: in std_logic_vector(31 downto 0);
         jalr: in std_logic;
         alu_src_a: in std_logic;
+        csr_we : in std_logic;
+        mret: in std_logic;
+        irq: in std_logic;
         alu_result    : out std_logic_vector(31 downto 0);
         zero      : out std_logic;
         pc        : out std_logic_vector(31 downto 0);
 
-        write_data : out std_logic_vector(31 downto 0)
-
+        write_data : out std_logic_vector(31 downto 0);
+        take_irq : out std_logic
     );
 end entity datapath;
 
@@ -47,6 +50,12 @@ architecture synth of datapath is
     signal target_base: std_logic_vector(31 downto 0) := (others => '0');
     signal target_sum: std_logic_vector(31 downto 0) := (others => '0');
     signal src_a :std_logic_vector(31 downto 0) := (others => '0');
+
+    signal rdata: std_logic_vector(31 downto 0) := (others => '0');
+    signal mtvec: std_logic_vector(31 downto 0) := (others => '0');
+    signal mepc : std_logic_vector(31 downto 0) := (others => '0');
+    signal uimm : std_logic_vector(31 downto 0) := (others => '0');
+    signal csr_src : std_logic_vector(31 downto 0) := (others => '0');
 begin
     alu_inst : entity work.alu
         port map(
@@ -97,13 +106,15 @@ begin
             b => imm_ext,
             y => target_sum
         );
-    PCMux : entity work.mux2
+    PCMux : entity work.mux4
         generic map(
             WIDTH => 32
         )
         port map(
             d0  => pc_plus4,
             d1  => pc_target,
+            d2 => mtvec,
+            d3 => mepc,
             sel => pc_src,
             y   => pc_next
         );
@@ -139,7 +150,7 @@ begin
         );
 
 
-        ResultMux : entity work.mux4
+        ResultMux : entity work.mux8
             generic map(
                 WIDTH => 32
             )
@@ -148,6 +159,10 @@ begin
                 d1  => read_data,
                 d2  => pc_plus4,
                 d3  => imm_ext,
+                d4 => rdata,
+                d5 => (others => '0'),
+                d6 => (others => '0'),
+                d7 => (others => '0'),
                 sel => result_src,
                 y   => result
             );
@@ -163,8 +178,41 @@ begin
                     sel => alu_src_a,
                     y   => src_a
                 );
+
+
+
+csr_src_mux2 : entity work.mux2
+    generic map(
+        WIDTH => 32
+    )
+    port map(
+        d0  => rd1,
+        d1  => uimm,
+        sel => instr(14),
+        y   => csr_src
+    );
+
+
+
+    csr_inst : entity work.csr
+        port map(
+            clk      => clk,
+            rst      => rst,
+            we       => csr_we,
+            addr     => instr(31 downto 20),
+            op       => instr(13 downto 12),
+            src      => csr_src,
+            irq      => irq,
+            mret     => mret,
+            pc       => pc_int,
+            rdata    => rdata,
+            mtvec    => mtvec,
+            mepc     => mepc,
+            take_irq => take_irq
+        );
+    
             
-        
+uimm <= (31 downto 5 => '0') & instr(19 downto 15);    
 write_data <= rd2;
 pc <= pc_int;
 alu_result <= alu_result_int;
