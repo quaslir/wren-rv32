@@ -22,7 +22,7 @@ end entity csr;
 
 architecture synth of csr is
     signal mie_bit    : std_logic                     := '0'; -- Interrupt switcher, 1 - enable interrupts, 0 - disable
-    signal mpie_bit   : std_logic                     := '0';
+    signal mpie_bit   : std_logic                     := '0';  -- previous MIE, saved on trap
     signal meie_bit   : std_logic                     := '0'; -- enable "outside" interrupts.
     signal mtvec_reg  : std_logic_vector(29 downto 0) := (others => '0'); -- handle address
     signal mepc_reg   : std_logic_vector(29 downto 0) := (others => '0'); -- return address
@@ -33,7 +33,7 @@ architecture synth of csr is
     signal take_irq_int : std_logic                     := '0';
 begin
 
-    process(clk)
+    process(clk)  -- CSR register updates
     begin
         if rising_edge(clk) then
             if rst = '1' then
@@ -44,16 +44,16 @@ begin
                 mepc_reg   <= (others => '0');
                 mcause_reg <= (others => '0');
             else
-                if take_irq_int = '1' then
-                    mepc_reg   <= pc(31 downto 2);
-                    mcause_reg <= x"8000000B";
-                    mpie_bit   <= mie_bit;
-                    mie_bit    <= '0';
+                if take_irq_int = '1' then  -- entering interrupt:
+                    mepc_reg   <= pc(31 downto 2);  -- save return address
+                    mcause_reg <= x"8000000B";  -- cause: machine external interrupt
+                    mpie_bit   <= mie_bit;  -- remember old MIE
+                    mie_bit    <= '0';  -- disable interrupts in handler
 
-                elsif mret = '1' then
-                    mie_bit  <= mpie_bit;
-                    mpie_bit <= '1';
-                elsif we = '1' then
+                elsif mret = '1' then  -- leaving interrupt:
+                    mie_bit  <= mpie_bit;  -- restore MIE
+                    mpie_bit <= '1';  -- MPIE = 1 per spec
+                elsif we = '1' then  -- CSR instruction write
                     case addr is
                         when x"300" =>  --mstatus
                             mie_bit  <= new_value(3);
@@ -76,9 +76,9 @@ begin
 
     end process;
 
-    process(addr, irq, mcause_reg, meie_bit, mepc_reg, mpie_bit, mie_bit, mtvec_reg)
+    process(addr, irq, mcause_reg, meie_bit, mepc_reg, mpie_bit, mie_bit, mtvec_reg)  -- CSR read mux
     begin
-        read_value <= (others => '0');
+        read_value <= (others => '0');  -- unimplemented bits read 0
         case addr is
             when x"300" =>              --mstatus
                 read_value(3) <= mie_bit;
@@ -91,8 +91,8 @@ begin
                 read_value(31 downto 2) <= mepc_reg;
             when x"342" =>              -- cause of entering the interrupt
                 read_value <= mcause_reg;
-            when x"344" =>
-                read_value(11) <= irq;
+            when x"344" =>  -- mip
+                read_value(11) <= irq;  -- MEIP: external irq pending
             when others => null;
         end case;
 
@@ -101,15 +101,15 @@ begin
     new_value <= src when op = "01" else -- csrrw
     read_value or src when op = "10" else -- csrrs
     read_value and not src when op = "11" else -- csrrc
-    read_value;
+    read_value;  -- no change
 
 
 
-    take_irq_int <= irq and meie_bit and mie_bit;
+    take_irq_int <= irq and meie_bit and mie_bit;  -- irq pending and enabled globally + locally
 
 
     rdata <= read_value;
-    mtvec <= mtvec_reg & "00";
-    mepc <= mepc_reg & "00";
+    mtvec <= mtvec_reg & "00";  -- mtvec, word aligned
+    mepc <= mepc_reg & "00";  -- mepc, word aligned
     take_irq <= take_irq_int;
 end architecture synth;

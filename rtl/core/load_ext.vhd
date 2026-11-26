@@ -18,7 +18,7 @@ architecture synth of load_ext is
     signal sign_h: std_logic := '0';
     alias size: std_logic_vector(1 downto 0) is funct3(1 downto 0);
 begin
-    byte_mux : entity work.mux4
+    byte_mux : entity work.mux4  -- pick byte by address
         generic map(
             WIDTH => 8
         )
@@ -31,7 +31,7 @@ begin
             y   => byte
         );
     
-        half_word_mux : entity work.mux2
+        half_word_mux : entity work.mux2  -- pick halfword by address bit 1
             generic map(
                 WIDTH => 16
             )
@@ -42,11 +42,11 @@ begin
                 y   => half_word
             );
 
-    sign_b <= byte(7) and (not funct3(2));
-    sign_h <= half_word(15) and (not funct3(2));
+    sign_b <= byte(7) and (not funct3(2));  -- sign bit for lb (0 for lbu)
+    sign_h <= half_word(15) and (not funct3(2));  -- sign bit for lh (0 for lhu)
     
-    read_data <= (31 downto 8 => sign_b ) & byte when size  = "00" else
-        (31 downto 16 => sign_h) & half_word when size = "01" else
-        rd;
+    read_data <= (31 downto 8 => sign_b ) & byte when size  = "00" else  -- byte load
+        (31 downto 16 => sign_h) & half_word when size = "01" else  -- halfword load
+        rd;  -- word load
 
 end architecture synth;

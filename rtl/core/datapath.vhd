@@ -29,7 +29,7 @@ entity datapath is
 end entity datapath;
 
 architecture synth of datapath is
-    constant PC_STEP   : std_logic_vector(31 downto 0) := x"00000004";
+    constant PC_STEP   : std_logic_vector(31 downto 0) := x"00000004";  -- PC increment
     signal   pc_target : std_logic_vector(31 downto 0) := (others => '0');
     signal   pc_plus4  : std_logic_vector(31 downto 0) := (others => '0');
     signal   pc_next   : std_logic_vector(31 downto 0) := (others => '0');
@@ -39,25 +39,25 @@ architecture synth of datapath is
     signal rd2   : std_logic_vector(31 downto 0) := (others => '0');
     signal mux_y : std_logic_vector(31 downto 0) := (others => '0');
 
-    alias rs2 : std_logic_vector(4 downto 0) is instr(24 downto 20);
-    alias rs1 : std_logic_vector(4 downto 0) is instr(19 downto 15);
-    alias rd  : std_logic_vector(4 downto 0) is instr(11 downto 7);
+    alias rs2 : std_logic_vector(4 downto 0) is instr(24 downto 20);  -- source register 2
+    alias rs1 : std_logic_vector(4 downto 0) is instr(19 downto 15);  -- source register 1
+    alias rd  : std_logic_vector(4 downto 0) is instr(11 downto 7);  -- destination register
 
-    signal result: std_logic_vector(31 downto 0) := (others => '0');
+    signal result: std_logic_vector(31 downto 0) := (others => '0');  -- value written back to rd
 
     signal pc_int: std_logic_vector(31 downto 0) := (others => '0');
     signal alu_result_int: std_logic_vector(31 downto 0) := (others => '0');
-    signal target_base: std_logic_vector(31 downto 0) := (others => '0');
+    signal target_base: std_logic_vector(31 downto 0) := (others => '0');  -- base for branch/jump target
     signal target_sum: std_logic_vector(31 downto 0) := (others => '0');
     signal src_a :std_logic_vector(31 downto 0) := (others => '0');
 
-    signal rdata: std_logic_vector(31 downto 0) := (others => '0');
+    signal rdata: std_logic_vector(31 downto 0) := (others => '0');  -- CSR read data
     signal mtvec: std_logic_vector(31 downto 0) := (others => '0');
     signal mepc : std_logic_vector(31 downto 0) := (others => '0');
-    signal uimm : std_logic_vector(31 downto 0) := (others => '0');
-    signal csr_src : std_logic_vector(31 downto 0) := (others => '0');
+    signal uimm : std_logic_vector(31 downto 0) := (others => '0');  -- zero-extended 5-bit CSR immediate
+    signal csr_src : std_logic_vector(31 downto 0) := (others => '0');  -- CSR operand: rs1 or uimm
 begin
-    alu_inst : entity work.alu
+    alu_inst : entity work.alu  -- main ALU
         port map(
             a           => src_a,
             b           => mux_y,
@@ -66,7 +66,7 @@ begin
             zero        => zero
         );
 
-    adder_inst : entity work.adder
+    adder_inst : entity work.adder  -- pc + 4
         generic map(
             WIDTH => 32
         )
@@ -76,7 +76,7 @@ begin
             y => pc_plus4
         );
 
-    pc_reg_inst : entity work.pc_reg
+    pc_reg_inst : entity work.pc_reg  -- program counter register
         generic map(
             WIDTH => 32
         )
@@ -86,7 +86,7 @@ begin
             next_pc => pc_next,
             pc      => pc_int
         );
-    target_base_mux : entity work.mux2
+    target_base_mux : entity work.mux2  -- pc for branch/jal, rs1 for jalr
         generic map(
             WIDTH => 32
         )
@@ -97,7 +97,7 @@ begin
             y   => target_base
         );
     
-    PCTarget : entity work.adder
+    PCTarget : entity work.adder  -- target = base + imm
         generic map(
             WIDTH => 32
         )
@@ -106,7 +106,7 @@ begin
             b => imm_ext,
             y => target_sum
         );
-    PCMux : entity work.mux4
+    PCMux : entity work.mux4  -- next pc: pc+4 / target / mtvec / mepc
         generic map(
             WIDTH => 32
         )
@@ -119,7 +119,7 @@ begin
             y   => pc_next
         );
 
-    mux2_inst : entity work.mux2
+    mux2_inst : entity work.mux2  -- ALU B: rs2 or immediate
         generic map(
             WIDTH => 32
         )
@@ -130,7 +130,7 @@ begin
             y   => mux_y
         );
 
-    regfile_inst : entity work.regfile
+    regfile_inst : entity work.regfile  -- 32 x 32-bit registers
         port map(
             clk => clk,
             we  => reg_write,
@@ -142,7 +142,7 @@ begin
             rd2 => rd2
         );
 
-    extend_inst : entity work.extend
+    extend_inst : entity work.extend  -- immediate generator
         port map(
             instr   => instr,
             imm_src => imm_src,
@@ -150,7 +150,7 @@ begin
         );
 
 
-        ResultMux : entity work.mux8
+        ResultMux : entity work.mux8  -- writeback: alu / mem / pc+4 / imm / csr
             generic map(
                 WIDTH => 32
             )
@@ -168,7 +168,7 @@ begin
             );
         
 
-            srca_mux : entity work.mux2
+            srca_mux : entity work.mux2  -- ALU A: rs1 or pc (auipc)
                 generic map(
                     WIDTH => 32
                 )
@@ -181,7 +181,7 @@ begin
 
 
 
-csr_src_mux2 : entity work.mux2
+csr_src_mux2 : entity work.mux2  -- funct3 bit 2 selects immediate form
     generic map(
         WIDTH => 32
     )
@@ -194,7 +194,7 @@ csr_src_mux2 : entity work.mux2
 
 
 
-    csr_inst : entity work.csr
+    csr_inst : entity work.csr  -- machine CSRs and interrupt logic
         port map(
             clk      => clk,
             rst      => rst,
@@ -212,9 +212,9 @@ csr_src_mux2 : entity work.mux2
         );
     
             
-uimm <= (31 downto 5 => '0') & instr(19 downto 15);    
-write_data <= rd2;
+uimm <= (31 downto 5 => '0') & instr(19 downto 15);  -- uimm from rs1 field
+write_data <= rd2;  -- store data = rs2
 pc <= pc_int;
 alu_result <= alu_result_int;
-pc_target <= target_sum (31 downto 1) & '0';
+pc_target <= target_sum (31 downto 1) & '0';  -- clear bit 0 (jalr rule)
 end architecture synth;

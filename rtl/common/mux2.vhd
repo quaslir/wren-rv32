@@ -18,5 +18,5 @@ end entity mux2;
 architecture synth of mux2 is
     
 begin
-    y <= d0 when sel = '0' else d1;
+    y <= d0 when sel = '0' else d1;  -- d0 when sel=0, else d1
 end architecture synth;

@@ -21,7 +21,7 @@ end entity mux4;
 architecture synth of mux4 is
     
 begin
-    y <= d0 when sel = "00" else 
+    y <= d0 when sel = "00" else  -- pick one of 4 inputs by sel
     d1 when sel = "01" else
     d2 when sel = "10" else
     d3;

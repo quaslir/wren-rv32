@@ -26,7 +26,7 @@ end entity mux8;
 architecture synth of mux8 is
     
 begin
-    y <= d0 when sel = "000" else 
+    y <= d0 when sel = "000" else  -- pick one of 8 inputs by sel
     d1 when sel = "001" else
     d2 when sel = "010" else
     d3 when sel = "011" else 

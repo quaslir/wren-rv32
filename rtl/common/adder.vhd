@@ -19,5 +19,5 @@ architecture synth of adder
 is
     
 begin
-    y <= std_logic_vector(unsigned(a) + unsigned(b));
+    y <= std_logic_vector(unsigned(a) + unsigned(b));  -- y = a + b (wraps on overflow)
 end architecture synth;

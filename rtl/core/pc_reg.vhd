@@ -22,9 +22,9 @@ begin
     begin
         if rising_edge(clk) then
             if rst = '1' then 
-                pc <= (others => '0');
+                pc <= (others => '0');  -- reset to address 0
             else 
-                pc <= next_pc;
+                pc <= next_pc;  -- load next pc
         end if;
     end if;
     end process;

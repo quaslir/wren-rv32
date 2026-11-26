@@ -37,11 +37,11 @@ architecture synth of core is
     signal csr_we: std_logic := '0';
     signal mret: std_logic := '0';
 begin
-controller_inst : entity work.controller
+controller_inst : entity work.controller  -- decodes instr into control signals
     port map(
         instr      => instr,
         zero       => zero,
-        addr_lo    => alu_result_int(1 downto 0),
+        addr_lo    => alu_result_int(1 downto 0),  -- low address bits for misalign check
         take_irq   => take_irq,
         reg_write  => reg_write,
         alu_src    => alu_src,
@@ -58,7 +58,7 @@ controller_inst : entity work.controller
         mret       => mret
     );
 
-    datapath_inst : entity work.datapath
+    datapath_inst : entity work.datapath  -- registers, ALU, PC and CSRs
         port map(
             clk        => clk,
             rst        => rst,
@@ -69,7 +69,7 @@ controller_inst : entity work.controller
             alu_op     => alu_op,
             instr      => instr,
             result_src => result_src,
-            read_data  => load_data,
+            read_data  => load_data,  -- load data after extension
             jalr       => jalr,
             alu_src_a  => alu_src_a,
             csr_we     => csr_we,
@@ -82,16 +82,16 @@ controller_inst : entity work.controller
             take_irq   => take_irq
         );
     
-store_align_inst : entity work.store_align
+store_align_inst : entity work.store_align  -- puts store data in the right byte lanes
     port map(
-        size    => instr(13 downto 12),
+        size    => instr(13 downto 12),  -- store size from funct3
         addr_lo => alu_result_int(1 downto 0),
         wd      => write_data_raw,
         wd_out  => write_data,
         be      => be
     );
 
-    load_ext_inst : entity work.load_ext
+    load_ext_inst : entity work.load_ext  -- extracts and extends loaded data
         port map(
             funct3    => instr(14 downto 12),
             addr_lo   => alu_result_int(1 downto 0),
@@ -99,7 +99,7 @@ store_align_inst : entity work.store_align
             read_data => load_data
         );
     
-    alu_result <= alu_result_int;
+    alu_result <= alu_result_int;  -- memory address / ALU result
 end architecture synth;
 
 

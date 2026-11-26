@@ -8,11 +8,11 @@ entity cpu is
     port(
         clk    : in  std_logic;
         rst    : in  std_logic;
-        btn: in std_logic;
-        sw_in : in std_logic_vector(9 downto 0) := (others => '0');
-        result : out std_logic_vector(31 downto 0);
-        led : out std_logic_vector(9 downto 0);
-        hex: out std_logic_vector(23 downto 0)
+        btn: in std_logic;  -- push button (irq source)
+        sw_in : in std_logic_vector(9 downto 0) := (others => '0');  -- board switches
+        result : out std_logic_vector(31 downto 0);  -- debug: ALU result
+        led : out std_logic_vector(9 downto 0);  -- board LEDs
+        hex: out std_logic_vector(23 downto 0)  -- 7-segment display data
     );
 end entity cpu;
 
@@ -25,7 +25,7 @@ architecture synth of cpu is
     signal write_data: std_logic_vector(31 downto 0) := (others => '0');
     signal ram_rd: std_logic_vector(31 downto 0) := (others => '0');
     signal be : std_logic_vector(3 downto 0) := (others => '0');
-    signal out_open: std_logic := '0';
+    signal out_open: std_logic := '0';  -- misaligned flag (unused)
     signal mem_write : std_logic := '0';
     signal read_data: std_logic_vector(31 downto 0) := (others => '0');
     signal io_rd: std_logic_vector(31 downto 0) := (others => '0');
@@ -33,7 +33,7 @@ architecture synth of cpu is
     signal irq: std_logic := '0';
 begin
 
-CORE : entity work.core
+CORE : entity work.core  -- RISC-V core
     port map(
         clk        => clk,
         rst        => rst,
@@ -52,7 +52,7 @@ CORE : entity work.core
     
 
     
-    MEM : entity work.ram
+    MEM : entity work.ram  -- shared instruction/data memory
         generic map(
             DEPTH     => MEM_DEPTH,
             INIT_FILE => INIT_FILE
@@ -60,15 +60,15 @@ CORE : entity work.core
         port map(
             clk    => clk,
             we     => ram_we,
-            addr   => alu_result,
-            addr_a => pc,
+            addr   => alu_result,  -- data port address
+            addr_a => pc,  -- instruction port address
             wd     => write_data,
             be     => be,
             rd     => ram_rd,
             rd_a   => instr
         );
 
-    mmio_inst : entity work.mmio
+    mmio_inst : entity work.mmio  -- memory-mapped I/O
         port map(
             clk   => clk,
             rst   => rst,
@@ -84,9 +84,9 @@ CORE : entity work.core
             irq   => irq
         );
     
-ram_we <= mem_write and not alu_result(31);
-io_we <= mem_write and alu_result(31);
-read_data <= io_rd when alu_result(31) = '1' else ram_rd;
+ram_we <= mem_write and not alu_result(31);  -- addr bit 31 = 0 -> RAM
+io_we <= mem_write and alu_result(31);  -- addr bit 31 = 1 -> I/O
+read_data <= io_rd when alu_result(31) = '1' else ram_rd;  -- read from I/O or RAM
 result <= alu_result;
         
 end architecture synth;
