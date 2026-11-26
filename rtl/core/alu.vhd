@@ -18,16 +18,15 @@ architecture synth of alu is
 
   function from_bool_to_logic_vector (  -- boolean -> 32-bit 1 or 0
     value : boolean
-  )
+  ) 
+
         return std_logic_vector is
+        variable result: std_logic_vector(31 downto 0) := (others => '0');
   begin
-
     if (value) then
-      return std_logic_vector(to_unsigned(1, 32));
-    else
-      return std_logic_vector(to_unsigned(0, 32));
+      result(0) := '1';
     end if;
-
+    return result;
   end function from_bool_to_logic_vector;
 
 begin
