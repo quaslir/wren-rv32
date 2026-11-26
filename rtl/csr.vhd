@@ -76,7 +76,7 @@ begin
 
     end process;
 
-    process(all)
+    process(addr, irq, mcause_reg, meie_bit, mepc_reg, mpie_bit, mie_bit, mtvec_reg)
     begin
         read_value <= (others => '0');
         case addr is

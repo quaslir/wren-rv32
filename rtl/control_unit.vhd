@@ -157,8 +157,10 @@ begin
                 when "001" | "010" | "011" | "101" | "110" | "111" =>
                     reg_write <= '1';
                     result_src <= "100";
-                    csr_we <= '1' when funct3(1 downto 0) = "01" or instr(19 downto 15) /= "00000" 
-                    else '0';
+
+                    if funct3(1 downto 0) = "01" or instr(19 downto 15) /= "00000"  then
+                        csr_we <= '1';
+                    end if;
                     
                     when "000" =>
                      case instr is
