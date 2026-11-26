@@ -49,31 +49,31 @@ set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name FLOW_ENABLE_POWER_ANALYZER ON
+set_global_assignment -name FLOW_ENABLE_POWER_ANALYZER OFF
 set_global_assignment -name POWER_DEFAULT_INPUT_IO_TOGGLE_RATE "12.5 %"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name VHDL_FILE ../rtl/csr.vhd
-set_global_assignment -name VHDL_FILE ../rtl/mmio.vhd
-set_global_assignment -name VHDL_FILE ../rtl/mux8.vhd
-set_global_assignment -name VHDL_FILE ../rtl/ram.vhd
-set_global_assignment -name VHDL_FILE ../rtl/load_ext.vhd
-set_global_assignment -name VHDL_FILE ../rtl/store_align.vhd
-set_global_assignment -name VHDL_FILE ../rtl/adder.vhd
-set_global_assignment -name VHDL_FILE ../rtl/alu.vhd
-set_global_assignment -name VHDL_FILE ../rtl/control_unit.vhd
-set_global_assignment -name VHDL_FILE ../rtl/controller.vhd
-set_global_assignment -name VHDL_FILE ../rtl/core.vhd
-set_global_assignment -name VHDL_FILE ../rtl/cpu.vhd
-set_global_assignment -name VHDL_FILE ../rtl/data_mem.vhd
-set_global_assignment -name VHDL_FILE ../rtl/datapath.vhd
-set_global_assignment -name VHDL_FILE ../rtl/extend.vhd
-set_global_assignment -name VHDL_FILE ../rtl/instr_mem.vhd
-set_global_assignment -name VHDL_FILE ../rtl/mux2.vhd
-set_global_assignment -name VHDL_FILE ../rtl/mux4.vhd
-set_global_assignment -name VHDL_FILE ../rtl/pc_reg.vhd
-set_global_assignment -name VHDL_FILE ../rtl/regfile.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/csr.vhd
+set_global_assignment -name VHDL_FILE ../rtl/soc/mmio.vhd
+set_global_assignment -name VHDL_FILE ../rtl/common/mux8.vhd
+set_global_assignment -name VHDL_FILE ../rtl/soc/ram.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/load_ext.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/store_align.vhd
+set_global_assignment -name VHDL_FILE ../rtl/common/adder.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/alu.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/control_unit.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/controller.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/core.vhd
+set_global_assignment -name VHDL_FILE ../rtl/soc/cpu.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/datapath.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/extend.vhd
+set_global_assignment -name VHDL_FILE ../rtl/common/mux2.vhd
+set_global_assignment -name VHDL_FILE ../rtl/common/mux4.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/pc_reg.vhd
+set_global_assignment -name VHDL_FILE ../rtl/core/regfile.vhd
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_1993
 set_global_assignment -name VHDL_SHOW_LMF_MAPPING_MESSAGES OFF
+set_global_assignment -name SDC_FILE "wrev-rv32.sdc"
+set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

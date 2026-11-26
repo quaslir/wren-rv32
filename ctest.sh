@@ -130,7 +130,7 @@ fi
 step "simulation (tb_cpu_prog)"
 WORK="$OUT/ghdl"
 mkdir -p "$WORK"
-ghdl -i --std=08 --workdir="$WORK" rtl/*.vhd tb/*.vhd
+ghdl -i --std=08 --workdir="$WORK" rtl/*/*.vhd tb/*.vhd
 ghdl -m --std=08 --workdir="$WORK" tb_cpu_prog
 LOG="$OUT/sim.log"
 set +e

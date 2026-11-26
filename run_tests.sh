@@ -13,7 +13,7 @@ mkdir -p "$LOG_DIR"
 SKIP=(tb_cpu_prog tb_cpu_io tb_cpu_irq)
 
 rm -f work-obj08.cf
-if ! ghdl -i --std=08 rtl/*.vhd tb/*.vhd; then
+if ! ghdl -i --std=08 rtl/*/*.vhd tb/*.vhd; then
     echo "FAIL  ghdl -i (import/analysis)"
     exit 1
 fi

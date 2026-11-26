@@ -13,7 +13,7 @@ EXPECTED=0 NO_SIM=1 MEM_WORDS="$MEM_WORDS" ./ctest.sh "$SRC"
 printf '\n\033[1m== simulation (tb_cpu_io)\033[0m\n'
 WORK="$OUT/ghdl"
 mkdir -p "$WORK"
-ghdl -i --std=08 --workdir="$WORK" rtl/*.vhd tb/*.vhd
+ghdl -i --std=08 --workdir="$WORK" rtl/*/*.vhd tb/*.vhd
 ghdl -m --std=08 --workdir="$WORK" tb_cpu_io
 LOG="$OUT/io_sim.log"
 set +e

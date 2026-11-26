@@ -93,7 +93,7 @@ echo "== analyze"
 WORK=build/ghdl
 mkdir -p "$WORK"
 GH="--std=08 --workdir=$WORK"
-ghdl -i $GH rtl/*.vhd tb/tb_cpu.vhd tb/tb_cpu_irq.vhd
+ghdl -i $GH rtl/*/*.vhd tb/tb_cpu.vhd tb/tb_cpu_irq.vhd
 
 echo "== simulation without external interrupts (tb_cpu_prog)"
 ghdl -m $GH tb_cpu_prog >/dev/null
