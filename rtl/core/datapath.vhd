@@ -56,7 +56,70 @@ architecture synth of datapath is
     signal mepc : std_logic_vector(31 downto 0) := (others => '0');
     signal uimm : std_logic_vector(31 downto 0) := (others => '0');  -- zero-extended 5-bit CSR immediate
     signal csr_src : std_logic_vector(31 downto 0) := (others => '0');  -- CSR operand: rs1 or uimm
+
+    signal instr_d: std_logic_vector(31 downto 0) := (others => '0');
+    signal pc_int_d : std_logic_vector(31 downto 0) := (others => '0');
+    signal pc_plus4_d : std_logic_vector(31 downto 0) := (others => '0');
+    signal valid_d : std_logic_vector(0 downto 0) := (others => '0');
+    
 begin
+
+    if_id_instr : entity work.pipe_reg
+        generic map(
+            WIDTH => 32
+        )
+        port map(
+            clk => clk,
+            rst => rst,
+            en  => '1',
+            clr => '0',
+            d   => instr,
+            q   => instr_d
+        );
+        
+    if_id_pc : entity work.pipe_reg
+        generic map(
+            WIDTH => 32
+        )
+        port map(
+            clk => clk,
+            rst => rst,
+            en  => '1',
+            clr => '0',
+            d   => pc_int,
+            q   => pc_int_d
+        );
+
+
+
+        if_id_pc4 : entity work.pipe_reg
+        generic map(
+            WIDTH => 32
+        )
+        port map(
+            clk => clk,
+            rst => rst,
+            en  => '1',
+            clr => '0',
+            d   => pc_plus4,
+            q   => pc_plus4_d
+        );
+
+        if_id_valid : entity work.pipe_reg
+        generic map(
+            WIDTH => 1
+        )
+        port map(
+            clk => clk,
+            rst => rst,
+            en  => '1',
+            clr => '0',
+            d   => "1",
+            q   => valid_d
+        );
+
+
+
     alu_inst : entity work.alu  -- main ALU
         port map(
             a           => src_a,
