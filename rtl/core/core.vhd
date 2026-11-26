@@ -23,7 +23,8 @@ architecture synth of core is
 
     signal reg_write : std_logic      := '0';              
     signal alu_op    : std_logic_vector(3 downto 0);
-    signal alu_src   : std_logic         :='0';         
+    signal alu_src   : std_logic         :='0';      
+    signal instr_d: std_logic_vector(31 downto 0) := (others => '0');   
     signal imm_src   : std_logic_vector(2 downto 0) := (others => '0');
     signal pc_src    : std_logic_vector(1 downto 0)  := (others => '0');              
     signal result_src: std_logic_vector(2 downto 0) := (others => '0');
@@ -39,7 +40,7 @@ architecture synth of core is
 begin
 controller_inst : entity work.controller  -- decodes instr into control signals
     port map(
-        instr      => instr,
+        instr      => instr_d,
         zero       => zero,
         addr_lo    => alu_result_int(1 downto 0),  -- low address bits for misalign check
         take_irq   => take_irq,
@@ -67,7 +68,7 @@ controller_inst : entity work.controller  -- decodes instr into control signals
             reg_write  => reg_write,
             imm_src    => imm_src,
             alu_op     => alu_op,
-            instr      => instr,
+            instr_f      => instr,
             result_src => result_src,
             read_data  => load_data,  -- load data after extension
             jalr       => jalr,
@@ -79,7 +80,9 @@ controller_inst : entity work.controller  -- decodes instr into control signals
             zero       => zero,
             pc         => pc,
             write_data => write_data_raw,
-            take_irq   => take_irq
+            take_irq   => take_irq,
+            instr_d => instr_d
+    
         );
     
 store_align_inst : entity work.store_align  -- puts store data in the right byte lanes
