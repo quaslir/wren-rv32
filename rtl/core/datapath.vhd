@@ -19,7 +19,9 @@ entity datapath is
         csr_we     : in  std_logic;
         mret       : in  std_logic;
         irq        : in  std_logic;
+        result_src_m: in std_logic_vector(2 downto 0);
         alu_result : out std_logic_vector(31 downto 0);
+        alu_result_e: out std_logic_vector(31 downto 0);
         instr_d    : out std_logic_vector(31 downto 0);
         zero       : out std_logic;
         pc         : out std_logic_vector(31 downto 0);
@@ -41,8 +43,7 @@ architecture synth of datapath is
     signal mux_y : std_logic_vector(31 downto 0) := (others => '0');
 
     alias  rs2    : std_logic_vector(4 downto 0) is instr_d_int(24 downto 20); -- source register 2
-    alias  rs1    : std_logic_vector(4 downto 0) is instr_d_int(19 downto 15); -- source register 1
-    alias  rd     : std_logic_vector(4 downto 0) is instr_f(11 downto 7); -- destination register
+    alias  rs1    : std_logic_vector(4 downto 0) is instr_d_int(19 downto 15); -- source register 1s
     alias  rd_d   : std_logic_vector(4 downto 0) is instr_d_int(11 downto 7);
     signal result : std_logic_vector(31 downto 0) := (others => '0'); -- value written back to rd
 
@@ -74,6 +75,20 @@ architecture synth of datapath is
     signal rs2_e : std_logic_vector(4 downto 0) := (others => '0');
 
     signal rd_e : std_logic_vector(4 downto 0) := (others => '0');
+
+    signal ex_result_e: std_logic_vector(31 downto 0) := (others => '0');
+
+    signal alu_result_m: std_logic_vector(31 downto 0) := (others => '0');
+    signal write_data_m: std_logic_vector(31 downto 0) := (others => '0');
+    signal rd_m: std_logic_vector(4 downto 0) := (others => '0');
+    signal ex_result_m: std_logic_vector(31 downto 0) := (others => '0');
+    signal load_m: std_logic := '0';
+
+    signal result_w: std_logic_vector(31 downto 0) := (others => '0');
+    signal rd_w: std_logic_vector(4 downto 0) := (others => '0');
+
+    signal result_m: std_logic_vector(31 downto 0) := (others => '0');
+
 begin
 
     if_id_instr : entity work.pipe_reg
@@ -232,6 +247,106 @@ begin
             q   => rd_e
         );
 
+        ex_mem_alu : entity work.pipe_reg
+            generic map(
+                WIDTH => 32
+            )
+            port map(
+                clk => clk,
+                rst => rst,
+                en  => '1',
+                clr => '0',
+                d   => alu_result_int,
+                q   => alu_result_m
+            );
+        ex_mem_write_data: entity work.pipe_reg
+            generic map(
+                WIDTH => 32
+            )
+            port map(
+                clk => clk,
+                rst => rst,
+                en  => '1',
+                clr => '0',
+                d   => rd2_e,
+                q   => write_data_m
+            );
+
+            ex_mem_rd: entity work.pipe_reg
+                generic map(
+                    WIDTH => 5
+                )
+                port map(
+                    clk => clk,
+                    rst => rst,
+                    en  => '1',
+                    clr => '0',
+                    d   => rd_e,
+                    q   => rd_m
+                );
+
+
+                ex_mem_res : entity work.pipe_reg
+                    generic map(
+                        WIDTH => 32
+                    )
+                    port map(
+                        clk => clk,
+                        rst => rst,
+                        en  => '1',
+                        clr => '0',
+                        d   => ex_result_e,
+                        q   => ex_result_m
+                    );
+
+
+
+                    result_m_mux2 : entity work.mux2
+                        generic map(
+                            WIDTH => 32
+                        )
+                        port map(
+                            d0  => ex_result_m,
+                            d1  => read_data,
+                            sel => load_m,
+                            y   => result_m
+                        );
+                    
+
+
+
+
+                mem_wb_res: entity work.pipe_reg
+                    generic map(
+                        WIDTH => 32
+                    )
+                    port map(
+                        clk => clk,
+                        rst => rst,
+                        en  => '1',
+                        clr => '0',
+                        d   => result_m,
+                        q   => result_w
+                    );
+
+
+                mem_wb_rd: entity work.pipe_reg
+                    generic map(
+                        WIDTH => 5
+                    )
+                    port map(
+                        clk => clk,
+                        rst => rst,
+                        en  => '1',
+                        clr => '0',
+                        d   => rd_m,
+                        q   => rd_w
+                    );
+                
+                
+
+
+                
     alu_inst : entity work.alu          -- main ALU
         port map(
             a           => src_a,
@@ -311,8 +426,8 @@ begin
             we  => reg_write,
             ra1 => rs1,
             ra2 => rs2,
-            wa  => rd,
-            wd  => result,
+            wa  => rd_w,
+            wd  => result_w,
             rd1 => rd1,
             rd2 => rd2
         );
@@ -330,15 +445,15 @@ begin
         )
         port map(
             d0  => alu_result_int,
-            d1  => read_data,
-            d2  => pc_plus4,
-            d3  => imm_ext,
+            d1  => (others => '0'),
+            d2  => pc_plus4_e,
+            d3  => imm_e,
             d4  => rdata,
             d5  => (others => '0'),
             d6  => (others => '0'),
             d7  => (others => '0'),
             sel => result_src,
-            y   => result
+            y   => ex_result_e
         );
 
     srca_mux : entity work.mux2         -- ALU A: rs1 or pc (auipc)
@@ -382,8 +497,10 @@ begin
 
     instr_d    <= instr_d_int;
     uimm       <= (31 downto 5 => '0') & instr_f(19 downto 15); -- uimm from rs1 field
-    write_data <= rd2_e;                -- store data = rs2
+    write_data <= write_data_m;                -- store data = rs2
     pc         <= pc_int;
-    alu_result <= alu_result_int;
+    alu_result <= alu_result_m;
     pc_target  <= target_sum(31 downto 1) & '0'; -- clear bit 0 (jalr rule)
+    alu_result_e <= alu_result_int;
+    load_m <= '1' when result_src_m = "001" else '0';
 end architecture synth;
