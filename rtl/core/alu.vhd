@@ -21,12 +21,12 @@ architecture synth of alu is
   ) 
 
         return std_logic_vector is
-        variable result: std_logic_vector(31 downto 0) := (others => '0');
+        variable converted: std_logic_vector(31 downto 0) := (others => '0');
   begin
     if (value) then
-      result(0) := '1';
+      converted(0) := '1';
     end if;
-    return result;
+    return converted;
   end function from_bool_to_logic_vector;
 
 begin

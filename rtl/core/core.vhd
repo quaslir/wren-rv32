@@ -38,11 +38,15 @@ architecture synth of core is
     signal csr_we: std_logic := '0';
     signal mret: std_logic := '0';
 begin
-controller_inst : entity work.controller  -- decodes instr into control signals
+
+
+controller_inst : entity work.controller
     port map(
-        instr      => instr_d,
+        clk        => clk,
+        rst        => rst,
+        instr      => instr,
         zero       => zero,
-        addr_lo    => alu_result_int(1 downto 0),  -- low address bits for misalign check
+        addr_lo    => alu_result_int(1 downto 0),
         take_irq   => take_irq,
         reg_write  => reg_write,
         alu_src    => alu_src,
