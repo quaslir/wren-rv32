@@ -37,61 +37,70 @@ architecture synth of core is
     signal take_irq : std_logic := '0';
     signal csr_we: std_logic := '0';
     signal mret: std_logic := '0';
+    signal funct3_m: std_logic_vector(2 downto 0) := (others => '0');
+    signal alu_result_e: std_logic_vector(31 downto 0) := (others => '0');
+        signal result_src_m: std_logic_vector(2 downto 0) := (others => '0');
 begin
+
 
 
 controller_inst : entity work.controller
     port map(
-        clk        => clk,
-        rst        => rst,
-        instr      => instr,
-        zero       => zero,
-        addr_lo    => alu_result_int(1 downto 0),
-        take_irq   => take_irq,
-        reg_write  => reg_write,
-        alu_src    => alu_src,
-        illegal    => illegal,
-        misaligned => misaligned,
-        pc_src     => pc_src,
-        alu_op     => alu_op,
-        imm_src    => imm_src,
-        mem_write  => mem_write,
-        result_src => result_src,
-        jalr       => jalr,
-        alu_src_a  => alu_src_a,
-        csr_we     => csr_we,
-        mret       => mret
+        clk          => clk,
+        rst          => rst,
+        instr        => instr_d,
+        zero         => zero,
+        addr_lo      => alu_result_e(1 downto 0),
+        take_irq     => take_irq,
+        reg_write    => reg_write,
+        alu_src      => alu_src,
+        illegal      => illegal,
+        misaligned   => misaligned,
+        pc_src       => pc_src,
+        alu_op       => alu_op,
+        imm_src      => imm_src,
+        mem_write    => mem_write,
+        result_src   => result_src,
+        jalr         => jalr,
+        alu_src_a    => alu_src_a,
+        csr_we       => csr_we,
+        mret         => mret,
+        funct3_m     => funct3_m,
+        result_src_m => result_src_m
     );
 
-    datapath_inst : entity work.datapath  -- registers, ALU, PC and CSRs
+
+    datapath_inst : entity work.datapath
         port map(
-            clk        => clk,
-            rst        => rst,
-            pc_src     => pc_src,
-            alu_src    => alu_src,
-            reg_write  => reg_write,
-            imm_src    => imm_src,
-            alu_op     => alu_op,
+            clk          => clk,
+            rst          => rst,
+            pc_src       => pc_src,
+            alu_src      => alu_src,
+            reg_write    => reg_write,
+            imm_src      => imm_src,
+            alu_op       => alu_op,
             instr_f      => instr,
-            result_src => result_src,
-            read_data  => load_data,  -- load data after extension
-            jalr       => jalr,
-            alu_src_a  => alu_src_a,
-            csr_we     => csr_we,
-            mret       => mret,
-            irq        => irq,
-            alu_result => alu_result_int,
-            zero       => zero,
-            pc         => pc,
-            write_data => write_data_raw,
-            take_irq   => take_irq,
-            instr_d => instr_d
-    
+            result_src   => result_src,
+            read_data    => load_data,
+            jalr         => jalr,
+            alu_src_a    => alu_src_a,
+            csr_we       => csr_we,
+            mret         => mret,
+            irq          => irq,
+            result_src_m => result_src_m,
+            alu_result   => alu_result_int,
+            alu_result_e => alu_result_e,
+            instr_d      => instr_d,
+            zero         => zero,
+            pc           => pc,
+            write_data   => write_data_raw,
+            take_irq     => take_irq
         );
+    
     
 store_align_inst : entity work.store_align  -- puts store data in the right byte lanes
     port map(
-        size    => instr(13 downto 12),  -- store size from funct3
+        size    => funct3_m(1 downto 0),  -- store size from funct3
         addr_lo => alu_result_int(1 downto 0),
         wd      => write_data_raw,
         wd_out  => write_data,
@@ -100,7 +109,7 @@ store_align_inst : entity work.store_align  -- puts store data in the right byte
 
     load_ext_inst : entity work.load_ext  -- extracts and extends loaded data
         port map(
-            funct3    => instr(14 downto 12),
+            funct3    => funct3_m,
             addr_lo   => alu_result_int(1 downto 0),
             rd        => read_data,
             read_data => load_data
