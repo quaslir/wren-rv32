@@ -9,7 +9,10 @@ entity controller is
         zero                                    : in  std_logic; -- ALU zero flag
         addr_lo                                 : in  std_logic_vector(1 downto 0); -- low 2 bits of memory address
         take_irq                                : in  std_logic; -- interrupt taken this cycle
+        flush_e: in std_logic;
+        valid_d: in std_logic;
         reg_write, alu_src, illegal, misaligned : out std_logic;
+        reg_write_m : out std_logic;
         pc_src                                  : out std_logic_vector(1 downto 0);
         alu_op                                  : out std_logic_vector(3 downto 0);
         imm_src                                 : out std_logic_vector(2 downto 0);
@@ -19,6 +22,7 @@ entity controller is
         alu_src_a                               : out std_logic;
         csr_we                                  : out std_logic;
         mret                                    : out std_logic;
+        load_e: out std_logic;
         funct3_m: out std_logic_vector(2 downto 0);
         result_src_m: out std_logic_vector(2 downto 0)
     );
@@ -57,16 +61,20 @@ architecture synth of controller is
     signal alu_src_a_e  : std_logic                    := '0';
     signal funct3_e     : std_logic_vector(2 downto 0) := (others => '0');
 
-    signal reg_write_m  : std_logic                    := '0';
     signal mem_write_m  : std_logic                    := '0';
 
     signal reg_write_w : std_logic := '0';
+
+
+    signal valid_e: std_logic := '0';
+
+
     alias size : std_logic_vector(1 downto 0) is funct3_e(1 downto 0); -- access size: 00=byte, 01=half, 10=word
 begin
     process(clk)
     begin
         if rising_edge(clk) then
-            if rst = '1' then
+            if rst = '1' or flush_e = '1' then
                 reg_write_e  <= '0';
                 alu_op_e     <= (others => '0');
                 alu_src_e    <= '0';
@@ -79,6 +87,7 @@ begin
                 jalr_e       <= '0';
                 alu_src_a_e  <= '0';
                 funct3_e     <= (others => '0');
+                valid_e <= '0';
             else
                 reg_write_e  <= reg_write_d;
                 alu_op_e     <= alu_op_d;
@@ -92,6 +101,7 @@ begin
                 jalr_e       <= jalr_d;
                 alu_src_a_e  <= alu_src_a_d;
                 funct3_e     <= funct3;
+                valid_e <= valid_d;
             end if;
         end if;
     end process;
@@ -150,7 +160,7 @@ begin
     mem_write  <= mem_write_m  and not take_irq; -- block mem write on misalign/irq
     csr_we     <= csr_we_raw and not take_irq; -- irq cancels CSR write
     mret       <= mret_raw and not take_irq; -- irq has priority over mret
-    illegal    <= illegal_e and not take_irq; -- hide illegal on irq
+    illegal    <= illegal_e and valid_e and not take_irq; -- hide illegal on irq
     misaligned <= mis and not take_irq; -- report misalign only without irq
     taken      <= (branch_e and (funct3_e(2) xor zero xor funct3_e(0))) or jump_e; -- branch condition from zero flag + funct3, or any jump
     pc_src     <= "10" when take_irq = '1' else -- irq -> mtvec
@@ -163,6 +173,6 @@ begin
     alu_src_a  <= alu_src_a_e;
     jalr       <= jalr_e;
     result_src <= result_src_e;
-
+        load_e <= '1' when result_src_e = "001" else '0';
 end architecture synth;
 

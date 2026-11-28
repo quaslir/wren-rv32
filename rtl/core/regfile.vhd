@@ -25,7 +25,7 @@ begin
    process(clk)
    begin
 
-    if rising_edge(clk)  then
+    if falling_edge(clk)  then
         if we = '1' and wa /= "00000" then  -- x0 is never written
             mem(to_integer(unsigned(wa))) <= wd;
         end if;

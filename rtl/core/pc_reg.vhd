@@ -9,6 +9,7 @@ entity pc_reg is
     port(
         clk : in std_logic;
         rst : in std_logic;
+        en: in std_logic;
         next_pc: in std_logic_vector(WIDTH - 1 downto 0);
         pc: out std_logic_vector(WIDTH - 1 downto 0)
     );
@@ -23,7 +24,7 @@ begin
         if rising_edge(clk) then
             if rst = '1' then 
                 pc <= (others => '0');  -- reset to address 0
-            else 
+            elsif en = '1' then 
                 pc <= next_pc;  -- load next pc
         end if;
     end if;

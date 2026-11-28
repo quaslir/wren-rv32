@@ -47,6 +47,8 @@ begin
         variable s2     : positive := 41;
         variable r      : real;
         variable n_x0   : natural := 0;
+        variable n_byp  : natural := 0;
+        variable q      : natural;
 
         impure function rnd(n : positive) return natural is
         begin
@@ -92,24 +94,33 @@ begin
 
         procedure op(w : std_logic; a : natural; d : std_logic_vector(31 downto 0); r1, r2 : natural; tag : string) is
         begin
-            wait until falling_edge(clk);
+            wait until rising_edge(clk);
+            wait for 1 ns;
             we  <= w;
             wa  <= a5(a);
             wd  <= d;
             ra1 <= a5(r1);
             ra2 <= a5(r2);
             wait for 1 ns;
-            expect_reads(tag & " before edge");
-            wait until rising_edge(clk);
+            expect_reads(tag & " before falling edge");
+            wait until falling_edge(clk);
             wait for 1 ns;
             if w = '1' and a /= 0 then
                 model(a) := d;
                 valid(a) := true;
+                if r1 = a or r2 = a then
+                    n_byp := n_byp + 1;
+                end if;
             end if;
             if w = '1' and a = 0 then
                 n_x0 := n_x0 + 1;
             end if;
-            expect_reads(tag & " after edge");
+            expect_reads(tag & " after falling edge");
+            wait until rising_edge(clk);
+            wait for 0 ns;
+            we <= '0';
+            wait for 1 ns;
+            expect_reads(tag & " after rising edge");
         end procedure;
 
         procedure sweep(tag : string) is
@@ -171,6 +182,9 @@ begin
                 op('0', rnd(32), rnd_word, rnd(32), rnd(32), "random we=0");
             elsif rnd(10) = 0 then
                 op('1', 0, rnd_word, rnd(32), 0, "random x0");
+            elsif rnd(3) = 0 then
+                q := 1 + rnd(31);
+                op('1', q, rnd_word, q, rnd(32), "random same-cycle read");
             else
                 op('1', rnd(32), rnd_word, rnd(32), rnd(32), "random");
             end if;
@@ -180,8 +194,8 @@ begin
         end loop;
         sweep("final");
 
-        report "tb_regfile: " & integer'image(checks) & " checks, " & integer'image(n_x0) & " writes to x0, " &
-               integer'image(errors) & " errors";
+        report "tb_regfile: " & integer'image(checks) & " checks, " & integer'image(n_x0) & " writes to x0, "
+            & integer'image(n_byp) & " same-cycle write/read, " & integer'image(errors) & " errors";
         assert errors = 0 report "tb_regfile FAILED" severity failure;
         report "tb_regfile PASSED";
         done <= true;

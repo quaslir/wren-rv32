@@ -5,7 +5,7 @@ use ieee.math_real.all;
 
 entity tb_pc_reg is
     generic(
-        N_RANDOM : natural := 3000
+        N_RANDOM : natural := 5000
     );
 end entity tb_pc_reg;
 
@@ -14,6 +14,7 @@ architecture sim of tb_pc_reg is
 
     signal clk       : std_logic := '0';
     signal rst       : std_logic := '1';
+    signal en        : std_logic := '1';
     signal next_pc   : std_logic_vector(31 downto 0) := (others => '0');
     signal pc        : std_logic_vector(31 downto 0);
     signal next_pc_n : std_logic_vector(7 downto 0) := (others => '0');
@@ -24,11 +25,11 @@ begin
 
     dut_w : entity work.pc_reg
         generic map(WIDTH => 32)
-        port map(clk => clk, rst => rst, next_pc => next_pc, pc => pc);
+        port map(clk => clk, rst => rst, en => en, next_pc => next_pc, pc => pc);
 
     dut_n : entity work.pc_reg
         generic map(WIDTH => 8)
-        port map(clk => clk, rst => rst, next_pc => next_pc_n, pc => pc_n);
+        port map(clk => clk, rst => rst, en => en, next_pc => next_pc_n, pc => pc_n);
 
     stim : process
         variable errors  : natural := 0;
@@ -39,8 +40,9 @@ begin
         variable model   : std_logic_vector(31 downto 0) := (others => '0');
         variable model_n : std_logic_vector(7 downto 0) := (others => '0');
         variable w       : std_logic_vector(31 downto 0);
-        variable do_rst  : boolean;
+        variable rv, ev  : std_logic;
         variable n_rst   : natural := 0;
+        variable n_hold  : natural := 0;
 
         impure function rnd(n : positive) return natural is
         begin
@@ -77,20 +79,21 @@ begin
             end if;
         end procedure;
 
-        procedure cycle(nv : std_logic_vector(31 downto 0); rv : std_logic; tag : string) is
+        procedure cycle(nv : std_logic_vector(31 downto 0); rs, e : std_logic; tag : string) is
         begin
             wait until falling_edge(clk);
             next_pc   <= nv;
             next_pc_n <= nv(7 downto 0);
-            rst       <= rv;
+            rst       <= rs;
+            en        <= e;
             wait for T / 4;
             expect(tag & " before edge");
             wait until rising_edge(clk);
             wait for 1 ns;
-            if rv = '1' then
+            if rs = '1' then
                 model   := (others => '0');
                 model_n := (others => '0');
-            else
+            elsif e = '1' then
                 model   := nv;
                 model_n := nv(7 downto 0);
             end if;
@@ -100,6 +103,7 @@ begin
         end procedure;
     begin
         rst <= '1';
+        en <= '1';
         next_pc <= x"DEADBEEF";
         next_pc_n <= x"EF";
         wait until rising_edge(clk);
@@ -107,15 +111,22 @@ begin
         wait for 1 ns;
         expect("reset");
 
-        cycle(x"00000004", '0', "first step");
-        cycle(x"FFFFFFFF", '0', "all ones");
-        cycle(x"FFFFFFFF", '1', "reset priority over next_pc");
-        cycle(x"80000000", '0', "msb");
-        cycle(x"00000000", '0', "zero");
-        cycle(x"12345678", '0', "pattern");
+        cycle(x"00000004", '0', '1', "first step");
+        cycle(x"FFFFFFFF", '0', '1', "all ones");
+        cycle(x"FFFFFFFF", '1', '1', "reset priority over next_pc");
+        cycle(x"80000000", '0', '1', "msb");
+        cycle(x"00000000", '0', '1', "zero");
+        cycle(x"12345678", '0', '1', "pattern");
+        cycle(x"CAFEBABE", '0', '0', "en=0 holds");
+        cycle(x"00000000", '0', '0', "en=0 holds 2");
+        cycle(x"FFFFFFFF", '0', '0', "en=0 holds 3");
+        cycle(x"FFFFFFFF", '1', '0', "reset priority over en=0");
+        cycle(x"ABCDEF01", '0', '0', "en=0 after reset");
+        cycle(x"ABCDEF01", '0', '1', "en=1 again");
 
         wait until falling_edge(clk);
         rst <= '1';
+        en <= '1';
         next_pc <= x"CAFEBABE";
         next_pc_n <= x"BE";
         wait for 1 ns;
@@ -135,17 +146,13 @@ begin
 
         for n in 1 to N_RANDOM loop
             w := rnd_word;
-            do_rst := rnd(20) = 0;
-            if do_rst then
-                n_rst := n_rst + 1;
-                cycle(w, '1', "random reset");
-            else
-                cycle(w, '0', "random");
-            end if;
+            if rnd(20) = 0 then rv := '1'; n_rst := n_rst + 1; else rv := '0'; end if;
+            if rnd(4) = 0 then ev := '0'; n_hold := n_hold + 1; else ev := '1'; end if;
+            cycle(w, rv, ev, "random");
         end loop;
 
-        report "tb_pc_reg: " & integer'image(checks) & " checks, " & integer'image(n_rst) & " random resets, " &
-               integer'image(errors) & " errors";
+        report "tb_pc_reg: " & integer'image(checks) & " checks, " & integer'image(n_rst) & " random resets, "
+            & integer'image(n_hold) & " holds, " & integer'image(errors) & " errors";
         assert errors = 0 report "tb_pc_reg FAILED" severity failure;
         report "tb_pc_reg PASSED";
         done <= true;
